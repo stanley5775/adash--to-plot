@@ -1,0 +1,208 @@
+import type { Property } from "@/types/property";
+
+export const properties: Property[] = [
+  {
+    id: "thrive-2bed-terrace",
+    slug: "thrive-2bed-terrace",
+    estateId: "thrive-estate",
+    plotNumber: "TE-A01",
+    title: "2 Bedroom Terrace with Attached BQ",
+    propertyType: "Terrace",
+    location: "The Thrive Estate, Kuje, Abuja",
+    sizeSqm: 150,
+    price: 1500000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/thrive-2bed-terrace.jpg"],
+    description:
+      "A compact, efficiently designed 2 bedroom terrace with an attached BQ, built for first-time property investors who want verified land and a home that grows in value inside a secured, fast-developing estate in Kuje.",
+    investmentHighlights: [
+      "Lowest entry price in The Thrive Estate — ideal for first-time investors",
+      "Located minutes from the Kuje-Gwagwalada expressway with rising land value",
+      "Flexible plans from outright to 24 months",
+    ],
+    features: ["Attached Boys' Quarters", "Fitted kitchen", "Tiled compound", "Perimeter fencing", "Prepaid metering"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6, 12, 18, 24],
+  },
+  {
+    id: "thrive-3bed-terrace",
+    slug: "thrive-3bed-terrace",
+    estateId: "thrive-estate",
+    plotNumber: "TE-B04",
+    title: "3 Bedroom Terrace with Attached BQ",
+    propertyType: "Terrace",
+    location: "The Thrive Estate, Kuje, Abuja",
+    sizeSqm: 200,
+    price: 2000000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/thrive-3bed-terrace.jpg"],
+    description:
+      "A well-proportioned 3 bedroom terrace with an attached BQ, designed for growing families who want more room without leaving the value and security of The Thrive Estate.",
+    investmentHighlights: [
+      "Larger plot size at 200sqm with room for expansion",
+      "Strong rental demand from Kuje's expanding civil-service population",
+      "Backed by verified title documentation",
+    ],
+    features: ["Attached Boys' Quarters", "Master ensuite", "Balcony", "Perimeter fencing", "Paved driveway"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6, 12, 18, 24],
+  },
+  {
+    id: "thrive-3bed-penthouse",
+    slug: "thrive-3bed-penthouse",
+    estateId: "thrive-estate",
+    plotNumber: "TE-C12",
+    title: "3 Bedroom Pent House",
+    propertyType: "Penthouse",
+    location: "The Thrive Estate, Kuje, Abuja",
+    sizeSqm: 250,
+    price: 2700000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/thrive-3bed-penthouse.jpg"],
+    description:
+      "An elevated 3 bedroom penthouse with a private balcony and commanding views across the estate — built for owners who want a statement home inside a gated, master-planned community.",
+    investmentHighlights: [
+      "Premium elevation with private upper-floor balcony",
+      "Higher resale value relative to standard terraces",
+      "Corner-plot orientation with extra natural light",
+    ],
+    features: ["Private balcony", "Walk-in wardrobe", "Attached BQ", "24-hour estate security", "Street lighting"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6, 12, 18, 24],
+  },
+  {
+    id: "thrive-4bed-semi-detached",
+    slug: "thrive-4bed-semi-detached",
+    estateId: "thrive-estate",
+    plotNumber: "TE-D07",
+    title: "4 Bedroom Semi-Detached Duplex",
+    propertyType: "Semi-Detached Duplex",
+    location: "The Thrive Estate, Kuje, Abuja",
+    sizeSqm: 300,
+    price: 3400000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/thrive-4bed-semi-detached.jpg"],
+    description:
+      "A spacious 4 bedroom semi-detached duplex with independent side access, finished to a premium standard for families who want space, privacy and long-term capital appreciation.",
+    investmentHighlights: [
+      "300sqm plot with independent side entrance",
+      "Ideal for large families or executive rental tenants",
+      "Estate infrastructure at completion stage in this cluster",
+    ],
+    features: ["4 ensuite bedrooms", "Family lounge", "Attached BQ", "Private parking for 2 cars", "Perimeter fencing"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6, 12, 18, 24],
+  },
+  {
+    id: "thrive-fully-detached",
+    slug: "thrive-fully-detached",
+    estateId: "thrive-estate",
+    plotNumber: "TE-E02",
+    title: "Fully Detached Duplex",
+    propertyType: "Detached Duplex",
+    location: "The Thrive Estate, Kuje, Abuja",
+    sizeSqm: 500,
+    price: 4600000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/thrive-fully-detached.jpg"],
+    description:
+      "A commanding fully detached duplex on a generous 500sqm plot — the flagship residence of The Thrive Estate, built for owners who want complete privacy and room to grow.",
+    investmentHighlights: [
+      "Largest single-family plot size in The Thrive Estate",
+      "Complete detachment on all sides for maximum privacy",
+      "Strong long-term capital appreciation profile",
+    ],
+    features: ["5 ensuite bedrooms", "Family & guest lounge", "Attached BQ", "Ample compound space", "Gated perimeter"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6, 12, 18, 24],
+  },
+  {
+    id: "thrive-6unit-flats",
+    slug: "thrive-6unit-flats",
+    estateId: "thrive-estate",
+    plotNumber: "TE-F01",
+    title: "6 Units of 3-Bedroom Block of Flats + Attached BQ",
+    propertyType: "Block of Flats",
+    location: "The Thrive Estate, Kuje, Abuja",
+    sizeSqm: 1000,
+    price: 10000000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/thrive-6unit-flats.jpg"],
+    description:
+      "A purpose-built income property comprising 6 units of 3-bedroom flats with an attached BQ on a full 1000sqm plot — designed for serious investors seeking multiple rental streams from a single asset.",
+    investmentHighlights: [
+      "6 independent rentable units on one title",
+      "Highest yield-per-plot opportunity in The Thrive Estate",
+      "Suited to institutional and diaspora investors",
+    ],
+    features: ["6 independent 3-bedroom units", "Attached BQ", "Shared compound & parking", "Dedicated water borehole", "Perimeter fencing"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6, 12, 18, 24],
+  },
+  {
+    id: "amio-2bed-bungalow",
+    slug: "amio-2bed-bungalow",
+    estateId: "amio-vista-homes",
+    plotNumber: "AV-01",
+    title: "2 Bedroom Bungalow with Penthouse",
+    propertyType: "Bungalow with Penthouse",
+    location: "AMIO Vista Homes, Kuje, Abuja",
+    sizeSqm: 300,
+    price: 3000000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/amio-2bed-bungalow.jpg"],
+    description:
+      "A distinctive 2 bedroom bungalow with an upper penthouse level, combining ground-floor convenience with an elevated private retreat — a signature design inside AMIO Vista Homes.",
+    investmentHighlights: [
+      "Rare bungalow-plus-penthouse layout in Kuje",
+      "Fast-track 6-month payment plan available",
+      "Verified title in a boutique, low-density estate",
+    ],
+    features: ["Upper penthouse room", "Fitted kitchen", "Private compound", "Perimeter fencing", "Borehole water supply"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6],
+  },
+  {
+    id: "amio-3bed-bungalow",
+    slug: "amio-3bed-bungalow",
+    estateId: "amio-vista-homes",
+    plotNumber: "AV-08",
+    title: "3 Bedroom Bungalow with Penthouse",
+    propertyType: "Bungalow with Penthouse",
+    location: "AMIO Vista Homes, Kuje, Abuja",
+    sizeSqm: 350,
+    price: 4000000,
+    status: "Available",
+    developmentStatus: "Ongoing",
+    images: ["/images/amio-3bed-bungalow.jpg"],
+    description:
+      "A generously sized 3 bedroom bungalow with penthouse level, offering extra room on a 350sqm plot inside AMIO Vista Homes' quiet, gated layout.",
+    investmentHighlights: [
+      "Largest bungalow-plus-penthouse offering at AMIO Vista Homes",
+      "0% interest on both outright and 6-month plans",
+      "Boutique estate with limited plot count",
+    ],
+    features: ["Upper penthouse suite", "3 ensuite bedrooms", "Private compound", "Perimeter fencing", "Borehole water supply"],
+    documentation: { surveyPlan: true, deedOfAssignment: true, allocation: false, contractOfSale: true },
+    paymentPlanMonths: [0, 6],
+  },
+];
+
+export async function getProperties(): Promise<Property[]> {
+  return properties;
+}
+
+export async function getPropertyBySlug(slug: string): Promise<Property | undefined> {
+  return properties.find((p) => p.slug === slug);
+}
+
+export async function getPropertiesByEstate(estateId: string): Promise<Property[]> {
+  return properties.filter((p) => p.estateId === estateId);
+}
