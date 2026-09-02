@@ -59,7 +59,7 @@ export const estates: Estate[] = [
     summary:
       "A boutique, low-density estate in Kuje offering distinctive bungalow-with-penthouse homes on an outright or fast 6-month plan.",
     description:
-      "AMIO Vista Homes is a boutique residential enclave in Kuje, Abuja, built around a signature bungalow-with-penthouse design that gives owners ground-floor living with an elevated private retreat above. The estate is intentionally low-density, with a limited plot count, and is positioned for buyers who want to move quickly — every home here is available outright or on a fast-track 6-month plan at 0% interest.",
+      "AMIO Vista Homes is a boutique residential enclave in Kuje, Abuja, built around a signature bungalow-with-penthouse design that gives owners ground-floor living with an elevated private retreat above. The estate is intentionally low-density, with a limited plot count, and is positioned for buyers who want to move quickly — every plot here is available outright or on a fast-track 6-month plan at 0% interest.",
     startingPrice: 3000000,
     totalPlots: 40,
     availablePlots: 27,
@@ -67,7 +67,10 @@ export const estates: Estate[] = [
     soldPlots: 8,
     developmentStatus: "Selling Fast",
     coverImage: "/images/amio-2bed-bungalow.jpg",
-    gallery: ["/images/amio-2bed-bungalow.jpg", "/images/amio-3bed-bungalow.jpg"],
+    gallery: [
+      "/images/amio-2bed-bungalow.jpg",
+      "/images/amio-3bed-bungalow.jpg",
+    ],
     features: [
       "Low-density, gated layout",
       "Borehole water supply",
@@ -89,6 +92,8 @@ export async function getEstates(): Promise<Estate[]> {
   return estates;
 }
 
-export async function getEstateBySlug(slug: string): Promise<Estate | undefined> {
+export async function getEstateBySlug(
+  slug: string,
+): Promise<Estate | undefined> {
   return estates.find((e) => e.slug === slug);
 }

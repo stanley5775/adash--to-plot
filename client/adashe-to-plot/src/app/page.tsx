@@ -177,7 +177,7 @@ export default function HomePage() {
               <h2 className="mt-5 text-3xl font-bold text-white">Exclusive access. Priority everything.</h2>
               <p className="mt-3 text-navy-100/70">
                 ATI Plus members get early access to new releases, priority inspection scheduling, and dedicated
-                support — before properties reach the public, for a flat ₦15,000 annual subscription.
+                support  before properties reach the public, for a flat ₦20,000 annual subscription.
               </p>
             </div>
             <Button href="/ati-plus" size="lg">Become an ATI Plus Member</Button>
