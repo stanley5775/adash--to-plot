@@ -6,7 +6,7 @@ import { JoinAtiPlusButton } from "@/components/ati/JoinAtiPlusButton";
 export const metadata: Metadata = {
   title: "ATI Plus",
   description:
-    "Join ATI Plus for a flat ₦15,000 annual subscription and get a 5% discount on every property payment plan, early access to new releases, priority inspection scheduling and dedicated support from Adashè-to-Plot.",
+    "Join ATI Plus for a flat ₦20,000 annual subscription and get a 5% discount on every property payment plan, early access to new releases, priority inspection scheduling and dedicated support from Adashè-to-Plot.",
 };
 
 const benefits = [
@@ -34,7 +34,7 @@ export default function AtiPlusPage() {
           <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-tight text-white sm:text-5xl">ATI Plus</h1>
           <p className="mt-5 max-w-xl text-lg text-navy-100/80">
             ATI Plus gives members access to exclusive property opportunities, investment benefits and priority
-            support — a faster, more direct path to property ownership, for a flat ₦15,000 annual subscription.
+            support — a faster, more direct path to property ownership, for a flat ₦20,000 annual subscription.
           </p>
           <div className="mt-8">
             <JoinAtiPlusButton />
@@ -63,7 +63,7 @@ export default function AtiPlusPage() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-500/20 px-3 py-1 text-xs font-semibold text-gold-700">
             Annual Subscription
           </span>
-          <p className="text-3xl font-bold text-navy-950">₦15,000 / year</p>
+          <p className="text-3xl font-bold text-navy-950">₦20,000 / year</p>
           <p className="max-w-md text-sm text-ink-700">
             A single flat subscription, paid before you join and renewed every 12 months, unlocks every ATI Plus
             benefit — no tier-based pricing, no hidden add-ons.
@@ -90,7 +90,7 @@ export default function AtiPlusPage() {
           <div className="rounded-3xl border border-navy-800/10 bg-white p-8 text-center">
             <Crown className="mx-auto h-10 w-10 text-gold-500" />
             <h3 className="mt-4 text-xl font-bold text-navy-950">Ready to join?</h3>
-            <p className="mt-2 text-sm text-ink-500">Membership is ₦15,000 per year and takes less than two minutes to activate.</p>
+            <p className="mt-2 text-sm text-ink-500">Membership is ₦20,000 per year and takes less than two minutes to activate.</p>
             <div className="mt-6 flex justify-center">
               <JoinAtiPlusButton />
             </div>

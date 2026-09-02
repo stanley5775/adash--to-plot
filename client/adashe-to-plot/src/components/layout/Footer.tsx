@@ -58,16 +58,16 @@ export function Footer() {
               <Mail className="h-4 w-4 shrink-0 text-gold-400" /> achezyhomes@gmail.com
             </li>
             <li className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" /> Plot 14, Cadastral Zone, Kuje, Abuja, FCT
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />  Abuja, Nigeria
             </li>
           </ul>
         </div>
       </div>
 
       <div className="border-t border-white/10 py-6">
-        <div className="container-page flex flex-col items-center justify-between gap-3 text-xs text-navy-100/50 sm:flex-row">
+        <div className="container-page flex flex-col items-center justify-center text-sm text-navy-100/50 sm:flex-row">
           <p>© {new Date().getFullYear()} Adashè-to-Plot. All rights reserved.</p>
-          <p>Prototype for client presentation — no live payments are processed.</p>
+          {/* <p>Prototype for client presentation — no live payments are processed.</p> */}
         </div>
       </div>
     </footer>

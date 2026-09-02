@@ -8,7 +8,7 @@ import { estates } from "@/data/estates";
 import { properties } from "@/data/properties";
 
 const priceBands = [
-  { label: "Any price", value: "" },
+  { label: "Price", value: "" },
   { label: "Under ₦2,000,000", value: "0-2000000" },
   { label: "₦2,000,000 – ₦4,000,000", value: "2000000-4000000" },
   { label: "Above ₦4,000,000", value: "4000000-999999999" },
@@ -44,7 +44,7 @@ export function HeroSearch() {
         onChange={(e) => setLocation(e.target.value)}
         className="rounded-2xl border border-navy-800/10 bg-white px-4 py-3 text-sm text-ink-700 focus:outline-none"
       >
-        <option value="">Any location</option>
+        <option value="">Locations</option>
         {locations.map((l) => (
           <option key={l} value={l}>{l}</option>
         ))}
@@ -54,7 +54,7 @@ export function HeroSearch() {
         onChange={(e) => setEstateId(e.target.value)}
         className="rounded-2xl border border-navy-800/10 bg-white px-4 py-3 text-sm text-ink-700 focus:outline-none"
       >
-        <option value="">Any estate</option>
+        <option value="">Estates</option>
         {estates.map((e) => (
           <option key={e.id} value={e.id}>{e.name}</option>
         ))}
@@ -64,7 +64,7 @@ export function HeroSearch() {
         onChange={(e) => setType(e.target.value)}
         className="rounded-2xl border border-navy-800/10 bg-white px-4 py-3 text-sm text-ink-700 focus:outline-none"
       >
-        <option value="">Any property type</option>
+        <option value="">Property type</option>
         {types.map((t) => (
           <option key={t} value={t}>{t}</option>
         ))}

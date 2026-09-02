@@ -27,16 +27,20 @@ export function PropertyCard({ property, estateName }: { property: Property; est
         <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
           Plot {property.plotNumber} · {estateName ?? property.location}
         </p>
-        <h3 className="text-base font-bold leading-snug text-navy-950">{property.title}</h3>
+        <h3 className="text-base flex gap-2 font-bold leading-snug text-navy-950">
+          <Ruler className="h-3.5 w-3.5" /> {property.sizeSqm}sqm
+        </h3>
         <p className="flex items-center gap-1.5 text-xs text-ink-500">
           <MapPin className="h-3.5 w-3.5" /> {property.location}
         </p>
-        <div className="mt-1 flex items-center gap-4 text-xs text-ink-500">
-          <span className="flex items-center gap-1.5"><Ruler className="h-3.5 w-3.5" /> {property.sizeSqm}sqm</span>
+        <div className="mt-1 flex items-center gap-4 text-xs text-blue-500">
+          <span className="flex items-center gap-1.5">{property.title}</span>
         </div>
         <div className="mt-3 border-t border-navy-800/10 pt-3">
           <p className="text-xs uppercase tracking-wide text-ink-300">Price</p>
-          <p className="text-lg font-bold text-navy-950">{formatNaira(property.price)}</p>
+          <p className="text-lg font-bold text-navy-950">
+            {formatNaira(property.price)}
+          </p>
         </div>
       </div>
     </Link>

@@ -1,8 +1,8 @@
 import type { AtiMember } from "@/types/ati-member";
 
-// ATI Plus membership requires a ₦15,000 annual subscription, paid before
+// ATI Plus membership requires a ₦20,000 annual subscription, paid before
 // a member can access ATI Plus benefits, and renewed every 12 months.
-export const ATI_PLUS_ANNUAL_FEE = 15000;
+export const ATI_PLUS_ANNUAL_FEE = 20000;
 
 // ATI Plus members receive a 5% discount on every property payment plan
 // (outright and every installment plan), applied in src/lib/payment.ts.

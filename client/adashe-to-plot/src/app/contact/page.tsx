@@ -6,7 +6,7 @@ import { WHATSAPP_DISPLAY_NUMBER } from "@/lib/whatsapp";
 const details = [
   { icon: Phone, label: "Phone", value: WHATSAPP_DISPLAY_NUMBER },
   { icon: Mail, label: "Email", value: "achezyhomes@gmail.com" },
-  { icon: MapPin, label: "Office", value: "Plot 14, Cadastral Zone, Kuje, Abuja, FCT" },
+  { icon: MapPin, label: "Office", value: "Abuja, Nigeria" },
   { icon: Clock, label: "Business Hours", value: "Mon – Sat, 9:00 AM – 6:00 PM" },
 ];
 

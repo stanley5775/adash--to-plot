@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatNaira } from "@/lib/payment";
 
-const ANNUAL_FEE = 15000;
+const ANNUAL_FEE = 20000;
 
 export function JoinAtiPlusForm() {
   const [step, setStep] = useState<"details" | "pay" | "done">("details");

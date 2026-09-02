@@ -62,7 +62,7 @@ export default async function EstateDetailsPage({ params }: { params: Promise<{ 
             </ul>
           </div>
 
-          <div>
+          {/* <div>
             <h3 className="text-lg font-bold text-navy-950">Location &amp; Landmarks</h3>
             <ul className="mt-4 space-y-3">
               {estate.landmarks.map((l) => (
@@ -72,7 +72,7 @@ export default async function EstateDetailsPage({ params }: { params: Promise<{ 
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </div>
 
         <div id="plots" className="mt-16 scroll-mt-24">

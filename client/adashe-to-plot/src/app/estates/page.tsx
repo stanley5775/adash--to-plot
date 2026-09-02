@@ -9,7 +9,7 @@ import { EstateGrid } from "@/components/estate/EstateGrid";
 import { Select } from "@/components/ui/Select";
 
 const priceBands = [
-  { label: "Any price", value: "" },
+  { label: "Price", value: "" },
   { label: "Under ₦2,000,000", value: "0-2000000" },
   { label: "₦2,000,000 – ₦4,000,000", value: "2000000-4000000" },
   { label: "Above ₦4,000,000", value: "4000000-999999999" },
@@ -70,13 +70,13 @@ function EstatesContent() {
             id="loc-filter"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            options={[{ label: "Any location", value: "" }, ...locations.map((l) => ({ label: l, value: l }))]}
+            options={[{ label: "Locations", value: "" }, ...locations.map((l) => ({ label: l, value: l }))]}
           />
           <Select
             id="type-filter"
             value={type}
             onChange={(e) => setType(e.target.value)}
-            options={[{ label: "Any property type", value: "" }, ...types.map((t) => ({ label: t, value: t }))]}
+            options={[{ label: "Property type", value: "" }, ...types.map((t) => ({ label: t, value: t }))]}
           />
           <Select
             id="price-filter"
@@ -89,7 +89,7 @@ function EstatesContent() {
             value={availability}
             onChange={(e) => setAvailability(e.target.value)}
             options={[
-              { label: "Any availability", value: "" },
+              { label: "Availability", value: "" },
               { label: "Has available plots", value: "available" },
             ]}
           />
