@@ -18,11 +18,8 @@ export function AdminSessionBar() {
       if (!active) return;
       setAdmin(current);
       setChecked(true);
-      // Defense-in-depth: middleware already redirects unauthenticated
-      // requests, but if a session expires while a page is open, this
-      // catches it on next mount/navigation.
       if (!current) {
-        router.replace("/admin/login");
+        router.replace("/login");
       }
     });
     return () => {
@@ -33,7 +30,7 @@ export function AdminSessionBar() {
   async function handleLogout() {
     setLoggingOut(true);
     await adminLogout();
-    router.push("/admin/login");
+    router.push("/login");
     router.refresh();
   }
 
@@ -42,7 +39,9 @@ export function AdminSessionBar() {
   return (
     <div className="mb-4 flex items-center justify-between gap-2 rounded-xl bg-white/5 px-3 py-2.5">
       <div className="min-w-0">
-        <p className="truncate text-xs font-semibold text-white">{admin.fullName}</p>
+        <p className="truncate text-xs font-semibold text-white">
+          {admin.fullName}
+        </p>
         <p className="truncate text-[11px] text-navy-100/50">{admin.email}</p>
       </div>
       <button
@@ -51,7 +50,11 @@ export function AdminSessionBar() {
         aria-label="Log out"
         className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-navy-100/70 hover:bg-white/10 hover:text-white disabled:opacity-60"
       >
-        {loggingOut ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+        {loggingOut ? (
+          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <LogOut className="h-3.5 w-3.5" />
+        )}
         Logout
       </button>
     </div>

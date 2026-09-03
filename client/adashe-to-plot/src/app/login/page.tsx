@@ -8,6 +8,7 @@ import { LogIn, LoaderCircle } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { login } from "@/services/auth.service";
+import { adminLogin } from "@/services/admin-auth.service";
 
 function LoginForm() {
   const router = useRouter();
@@ -21,26 +22,40 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [showForgotNote, setShowForgotNote] = useState(false);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
+async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  setError(null);
 
-    if (!email.trim() || !password) {
-      setError("Enter your email and password.");
-      return;
-    }
-
-    setSubmitting(true);
-    const result = await login({ email, password, rememberMe });
-    setSubmitting(false);
-
-    if (!result.success) {
-      setError(result.error ?? "Invalid email or password.");
-      return;
-    }
-
-    router.push(redirectTo);
+  if (!email.trim() || !password) {
+    setError("Enter your email and password.");
+    return;
   }
+
+  setSubmitting(true);
+
+  // Try the admin credential store first. If it matches, this is an admin.
+  const adminResult = await adminLogin({ email: email.trim(), password });
+  if (adminResult.success) {
+    setSubmitting(false);
+    const adminRedirect = redirectTo.startsWith("/admin")
+      ? redirectTo
+      : "/admin";
+    router.push(adminRedirect);
+    router.refresh();
+    return;
+  }
+
+  const result = await login({ email, password, rememberMe });
+  setSubmitting(false);
+
+  if (!result.success) {
+    // Deliberately generic — never reveal which check failed.
+    setError("Invalid email or password.");
+    return;
+  }
+
+  router.push(redirectTo);
+}
 
   return (
     <div className="container-page flex min-h-[70vh] items-center justify-center py-16">

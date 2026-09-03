@@ -5,7 +5,6 @@ import { getPropertiesByEstateId } from "@/services/property.service";
 import { getPaymentPlanForEstate } from "@/services/payment-plan.service";
 import { EstateGallery } from "@/components/estate/EstateGallery";
 import { EstateStats } from "@/components/estate/EstateStats";
-import { PlotMap } from "@/components/estate/PlotMap";
 import { PropertyGrid } from "@/components/property/PropertyGrid";
 import { PaymentPlansSection } from "@/components/property/PaymentPlansSection";
 import { BookInspectionButton } from "@/components/booking/BookInspectionButton";
@@ -61,18 +60,6 @@ export default async function EstateDetailsPage({ params }: { params: Promise<{ 
               ))}
             </ul>
           </div>
-
-          {/* <div>
-            <h3 className="text-lg font-bold text-navy-950">Location &amp; Landmarks</h3>
-            <ul className="mt-4 space-y-3">
-              {estate.landmarks.map((l) => (
-                <li key={l.name} className="flex items-center justify-between rounded-xl border border-navy-800/10 bg-white px-4 py-3 text-sm">
-                  <span className="text-ink-700">{l.name}</span>
-                  <span className="font-semibold text-navy-950">{l.distance}</span>
-                </li>
-              ))}
-            </ul>
-          </div> */}
         </div>
 
         <div id="plots" className="mt-16 scroll-mt-24">
@@ -81,10 +68,6 @@ export default async function EstateDetailsPage({ params }: { params: Promise<{ 
           <div className="mt-6">
             <PropertyGrid properties={properties} estateName={estate.name} />
           </div>
-        </div>
-
-        <div className="mt-16">
-          <PlotMap estate={estate} />
         </div>
 
         {plan && (
