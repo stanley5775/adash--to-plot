@@ -19,9 +19,9 @@ export default async function DashboardOverviewPage() {
   const customer = await getCurrentCustomer();
 
   if (!customer) {
-    redirect("/login?redirect=/dashboard");
+    redirect("/dashbo");
   }
-
+  
   const sale = await getSaleByCustomerId(customer.id);
   
   const property = sale ? await getPropertyBySlug(sale.propertyId) : undefined;
@@ -34,7 +34,7 @@ export default async function DashboardOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <DashboardHeader customer={customer} title="Overview" subtitle="A snapshot of your investment with Adashè-to-Plot." />
+      <DashboardHeader customer={null} title="Overview" subtitle="A snapshot of your investment with Adashè-to-Plot." />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Properties" value="1" icon={<Home className="h-4 w-4" />} />

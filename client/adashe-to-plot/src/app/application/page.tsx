@@ -122,10 +122,7 @@ export default function LandApplicationPage() {
 
       if (!active) return;
 
-      if (!current) {
-        router.replace("/login?redirect=/application");
-        return;
-      }
+
 
       setUser(current);
       setApplicant(emptyApplicant(current));
