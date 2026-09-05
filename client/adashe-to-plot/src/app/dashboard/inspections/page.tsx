@@ -1,3 +1,4 @@
+import {redirect} from "next/navigation";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getInspectionsByCustomerName } from "@/services/inspection.service";
 import { estates } from "@/data/estates";
@@ -6,6 +7,9 @@ import { InspectionsList } from "@/components/dashboard/InspectionsList";
 
 export default async function DashboardInspectionsPage() {
   const customer = await getCurrentCustomer();
+  if (!customer) {
+    redirect("/login?redirect=/dashboard/inspections");
+  }
   const inspections = await getInspectionsByCustomerName(customer.name);
   const estateNames = Object.fromEntries(estates.map((e) => [e.id, e.name]));
 

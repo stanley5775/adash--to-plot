@@ -45,13 +45,13 @@ export function Navbar() {
           <Link href="/login" className="text-sm font-medium text-ink-500 hover:text-navy-950">
             Login
           </Link>
-          {/* <Link
+          <Link
             href="/dashboard"
             className="inline-flex items-center gap-2 rounded-full border border-navy-800/15 px-4 py-2.5 text-sm font-semibold text-navy-900 hover:border-navy-800/40"
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
-          </Link> */}
+          </Link> 
           <Link
             href="/estates"
             className="inline-flex items-center rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-800"

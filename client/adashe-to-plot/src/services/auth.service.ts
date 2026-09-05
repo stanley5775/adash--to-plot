@@ -1,93 +1,147 @@
+import type {
+  AuthResult,
+  AuthUser,
+  LoginInput,
+  RegisterInput,
+} from "@/types/auth";
+
+async function parseResponse(response: Response): Promise<{
+  success: boolean;
+  user?: AuthUser;
+  error?: string;
+}> {
+  try {
+    return await response.json();
+  } catch {
+    return {
+      success: false,
+      error: "Unable to process the server response.",
+    };
+  }
+}
+
 /**
- * Mock authentication service.
+ * Register a new customer account.
  *
- * ARCHITECTURE: every function here talks to `src/lib/storage.ts`, never to
- * `localStorage` directly. When a real backend exists, only the bodies of
- * these functions change — to `fetch("/api/auth/...")` calls — while every
- * page/component that imports from this file stays exactly the same.
- *
- * SECURITY NOTE: this is NOT secure authentication. Passwords are kept in
- * plain form in browser storage purely to simulate a login for this
- * prototype. A real backend must hash passwords (e.g. bcrypt/argon2), issue
- * signed session tokens (e.g. JWT/HTTP-only cookies), and never trust the
- * client to say who is logged in.
+ * The backend will create the user, hash the password and establish
+ * the authenticated session.
  */
-import type { AuthUser, RegisterInput, LoginInput, AuthResult } from "@/types/auth";
-import { readStorage, writeStorage, removeStorage, STORAGE_KEYS } from "@/lib/storage";
-import { isValidEmail, isPasswordValid } from "@/lib/validators";
-
-interface StoredUser extends AuthUser {
-  // NOT a real hash — placeholder only, see security note above.
-  password: string;
-}
-
-function getUsers(): StoredUser[] {
-  return readStorage<StoredUser[]>(STORAGE_KEYS.users, []);
-}
-
-function saveUsers(users: StoredUser[]): void {
-  writeStorage(STORAGE_KEYS.users, users);
-}
-
-function toPublicUser(user: StoredUser): AuthUser {
-  const { password: _password, ...publicUser } = user;
-  return publicUser;
-}
-
 export async function register(input: RegisterInput): Promise<AuthResult> {
-  if (!input.fullName.trim()) return { success: false, error: "Full name is required." };
-  if (!isValidEmail(input.email)) return { success: false, error: "Enter a valid email address." };
-  if (!input.phone.trim()) return { success: false, error: "Phone number is required." };
-  if (!isPasswordValid(input.password)) {
-    return { success: false, error: "Password does not meet the minimum requirements." };
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(input),
+    });
+
+    const result = await parseResponse(response);
+
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error ?? "Unable to create your account.",
+      };
+    }
+
+    return {
+      success: true,
+      user: result.user,
+    };
+  } catch (error) {
+    console.error("Registration request failed:", error);
+
+    return {
+      success: false,
+      error: "Unable to connect to the server. Please try again.",
+    };
   }
-  if (input.password !== input.confirmPassword) {
-    return { success: false, error: "Passwords do not match." };
-  }
-
-  const users = getUsers();
-  if (users.some((u) => u.email.toLowerCase() === input.email.toLowerCase())) {
-    return { success: false, error: "An account with this email already exists." };
-  }
-
-  const newUser: StoredUser = {
-    id: `user-${Date.now()}`,
-    fullName: input.fullName.trim(),
-    email: input.email.trim().toLowerCase(),
-    phone: input.phone.trim(),
-    password: input.password,
-    createdAt: new Date().toISOString(),
-  };
-
-  saveUsers([...users, newUser]);
-  writeStorage(STORAGE_KEYS.session, { userId: newUser.id });
-
-  return { success: true, user: toPublicUser(newUser) };
 }
 
+/**
+ * Log in an existing customer.
+ *
+ * Authentication/session handling belongs to the backend.
+ * No password or session data is stored in localStorage.
+ */
 export async function login(input: LoginInput): Promise<AuthResult> {
-  const users = getUsers();
-  const user = users.find((u) => u.email.toLowerCase() === input.email.trim().toLowerCase());
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(input),
+    });
 
-  if (!user || user.password !== input.password) {
-    return { success: false, error: "Invalid email or password." };
+    const result = await parseResponse(response);
+
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        error: result.error ?? "Invalid email or password.",
+      };
+    }
+
+    return {
+      success: true,
+      user: result.user,
+    };
+  } catch (error) {
+    console.error("Login request failed:", error);
+
+    return {
+      success: false,
+      error: "Unable to connect to the server. Please try again.",
+    };
   }
-
-  writeStorage(STORAGE_KEYS.session, { userId: user.id, rememberMe: !!input.rememberMe });
-  return { success: true, user: toPublicUser(user) };
 }
 
-export function logout(): void {
-  removeStorage(STORAGE_KEYS.session);
+/**
+ * Log out the currently authenticated customer.
+ */
+export async function logout(): Promise<void> {
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Logout request failed:", error);
+  }
 }
 
-export function getCurrentUser(): AuthUser | null {
-  const session = readStorage<{ userId?: string } | null>(STORAGE_KEYS.session, null);
-  if (!session?.userId) return null;
-  const user = getUsers().find((u) => u.id === session.userId);
-  return user ? toPublicUser(user) : null;
+/**
+ * Get the currently authenticated customer from the backend session.
+ */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  try {
+    const response = await fetch("/api/auth/me", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const result = await parseResponse(response);
+
+    return result.success && result.user ? result.user : null;
+  } catch (error) {
+    console.error("Get current user request failed:", error);
+    return null;
+  }
 }
 
-export function isAuthenticated(): boolean {
-  return getCurrentUser() !== null;
+/**
+ * Check whether a customer currently has a valid backend session.
+ */
+export async function isAuthenticated(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return user !== null;
 }

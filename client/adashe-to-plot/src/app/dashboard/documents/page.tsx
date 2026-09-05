@@ -1,3 +1,4 @@
+import {redirect} from "next/navigation";
 import { Download, FileText } from "lucide-react";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getSaleByCustomerId } from "@/services/sale.service";
@@ -9,6 +10,11 @@ import { formatDate } from "@/lib/payment";
 
 export default async function DashboardDocumentsPage() {
   const customer = await getCurrentCustomer();
+  
+  if (!customer) {
+    redirect("/login?redirect=/dashboard/documents");
+  }
+
   const sale = await getSaleByCustomerId(customer.id);
   const docs = sale ? await getDocumentsByPropertyId(sale.propertyId) : [];
 

@@ -1,47 +1,54 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import type { FormEvent } from "react";
+import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserPlus, LoaderCircle } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
-import { register } from "@/services/auth.service";
-import { isValidEmail, isPasswordValid } from "@/lib/validators";
+import { register as registerUser } from "@/services/auth.service";
 
 function RegisterForm() {
+  type RegisterFormData = {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+    confirmPassword: string;
+  };
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    defaultValues: {
+      fullName: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  const password = watch("password");
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/application";
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setTouched(true);
-    setError(null);
-
-    if (!fullName.trim()) return setError("Full name is required.");
-    if (!isValidEmail(email)) return setError("Enter a valid email address.");
-    if (!phone.trim()) return setError("Phone number is required.");
-    if (!isPasswordValid(password)) return setError("Your password doesn't meet the requirements below.");
-    if (password !== confirmPassword) return setError("Passwords do not match.");
-
-    setSubmitting(true);
-    const result = await register({ fullName, email, phone, password, confirmPassword });
-    setSubmitting(false);
+  async function onSubmit(data: RegisterFormData) {
+    const result = await registerUser(data);
 
     if (!result.success) {
-      setError(result.error ?? "Something went wrong. Please try again.");
+      setError("root", {
+        type: "server",
+        message: result.error ?? "Something went wrong. Please try again.",
+      });
       return;
     }
 
@@ -56,41 +63,121 @@ function RegisterForm() {
             <UserPlus className="h-3.5 w-3.5" /> Create your account
           </span>
           <h1 className="mt-4 text-2xl font-bold text-navy-950">Register</h1>
-          <p className="mt-1.5 text-sm text-ink-500">Create an account to start your Land Application.</p>
+          <p className="mt-1.5 text-sm text-ink-500">
+            Create an account to start your Land Application.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-          <Input label="Full name" id="r-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Amaka Johnson" required />
-          <Input label="Email address" id="r-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
-          <Input label="Phone number" id="r-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 0803 123 4567" required />
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mt-8 flex flex-col gap-4"
+        >
+          <Input
+            label="Full name"
+            id="r-name"
+            placeholder="e.g. Amaka Johnson"
+            autoComplete="name"
+            {...register("fullName", {
+              required: "Full name is required.",
+              minLength: {
+                value: 2,
+                message: "Enter your full name.",
+              },
+            })}
+          />
+
+          {errors.fullName && (
+            <p className="text-xs text-status-sold">
+              {errors.fullName.message}
+            </p>
+          )}
+
+          <Input
+            label="Email address"
+            id="r-email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            {...register("email", {
+              required: "Email address is required.",
+              pattern: {
+                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                message: "Enter a valid email address.",
+              },
+            })}
+          />
+
+          {errors.email && (
+            <p className="text-xs text-status-sold">{errors.email.message}</p>
+          )}
+
+          <Input
+            label="Phone number"
+            id="r-phone"
+            type="tel"
+            placeholder="e.g. 0803 123 4567"
+            autoComplete="tel"
+            {...register("phone", {
+              required: "Phone number is required.",
+            })}
+          />
+
+          {errors.phone && (
+            <p className="text-xs text-status-sold">{errors.phone.message}</p>
+          )}
+
           <Input
             label="Password"
             id="r-password"
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             placeholder="e.g. Stanley@123"
-            required
+            autoComplete="new-password"
+            {...register("password", {
+              required: "Password is required.",
+              minLength: {
+                value: 8,
+                message: "Password must be at least 8 characters.",
+              },
+              pattern: {
+                value: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/,
+                message:
+                  "Password must contain an uppercase letter, number and special character.",
+              },
+            })}
           />
-          {(touched || password) && <PasswordChecklist password={password} />}
+
+          <PasswordChecklist password={password} />
+
+          {errors.password && (
+            <p className="text-xs text-status-sold">
+              {errors.password.message}
+            </p>
+          )}
+
           <Input
             label="Confirm password"
             id="r-confirm"
             type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Re-enter your password"
-            required
+            autoComplete="new-password"
+            {...register("confirmPassword", {
+              required: "Please confirm your password.",
+              validate: (value) =>
+                value === password || "Passwords do not match.",
+            })}
           />
 
-          {error && (
-            <p className="rounded-lg border border-status-sold/20 bg-[#f8e9e9] px-3 py-2.5 text-sm text-status-sold">{error}</p>
+          {errors.confirmPassword && (
+            <p className="text-xs text-status-sold">
+              {errors.confirmPassword.message}
+            </p>
           )}
 
-          <Button type="submit" disabled={submitting} className="mt-2">
-            {submitting ? (
+          <Button type="submit" disabled={isSubmitting} className="mt-2">
+            {isSubmitting ? (
               <>
-                <LoaderCircle className="h-4 w-4 animate-spin" /> Creating account…
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Creating account…
               </>
             ) : (
               "Create Account"
@@ -100,7 +187,10 @@ function RegisterForm() {
 
         <p className="mt-6 text-center text-sm text-ink-500">
           Already have an account?{" "}
-          <Link href={`/login?redirect=${encodeURIComponent(redirectTo)}`} className="font-semibold text-navy-800 hover:text-gold-600">
+          <Link
+            href={`/login?redirect=${encodeURIComponent(redirectTo)}`}
+            className="font-semibold text-navy-800 hover:text-gold-600"
+          >
             Log in
           </Link>
         </p>

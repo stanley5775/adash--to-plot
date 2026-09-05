@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getSaleByCustomerId } from "@/services/sale.service";
@@ -16,8 +16,13 @@ import { formatNaira, formatDate } from "@/lib/payment";
 
 export default async function DashboardPropertyDetailsPage({ params }: { params: Promise<{ propertyId: string }> }) {
   const { propertyId } = await params;
-  const customer = await getCurrentCustomer();
-  const property = await getPropertyBySlug(propertyId);
+const customer = await getCurrentCustomer();
+
+if (!customer) {
+  redirect(`/login?redirect=/dashboard/properties/${propertyId}`);
+}
+
+const property = await getPropertyBySlug(propertyId);
   if (!property) notFound();
 
   const sale = await getSaleByCustomerId(customer.id);

@@ -1,10 +1,15 @@
 /**
- * Backend-ready payment model. The frontend currently produces and consumes
- * these shapes via a mock implementation (src/services/payment.service.ts),
- * but the shape is designed to map directly onto a future
- * POST /api/payments/initialize + webhook-verified backend record.
+ * Backend-ready payment model.
+ *
+ * The frontend communicates with the backend through the payment service.
+ * Payment initialization may return a checkout URL, while final payment
+ * status must come from backend verification/webhooks.
  */
-export type PaymentType = "application_fee" | "property_purchase" | "installment";
+
+export type PaymentType =
+  | "application_fee"
+  | "property_purchase"
+  | "installment";
 
 export type PaymentStatus = "pending" | "success" | "failed";
 
@@ -32,6 +37,7 @@ export interface PaymentRequest {
 export interface PaymentResult {
   success: boolean;
   reference?: string;
-  status: "success" | "failed" | "pending";
+  status: PaymentStatus;
+  authorizationUrl?: string;
   error?: string;
 }

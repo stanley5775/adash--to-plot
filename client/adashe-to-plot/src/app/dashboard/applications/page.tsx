@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
 import { FileText, Plus, Eye } from "lucide-react";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getUserApplications } from "@/services/application.service";
@@ -18,6 +19,7 @@ import type { Customer } from "@/types/customer";
 import type { Application } from "@/types/application";
 
 export default function DashboardApplicationsPage() {
+  const router = useRouter();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [applications, setApplications] = useState<Application[] | null>(null);
 
@@ -25,6 +27,10 @@ export default function DashboardApplicationsPage() {
     let active = true;
     (async () => {
       const current = await getCurrentCustomer();
+      if (!current) {
+        router.replace("/login?redirect=/dashboard/applications");
+        return;
+      }
       const mine = await getUserApplications(current.email);
       if (!active) return;
       setCustomer(current);

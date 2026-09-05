@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Star, Clock, Gift, HeartHandshake, ShieldCheck, Crown, Wallet, Percent } from "lucide-react";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getAtiMemberByName } from "@/services/ati.service";
@@ -18,6 +19,11 @@ const benefits = [
 
 export default async function DashboardAtiPlusPage() {
   const customer = await getCurrentCustomer();
+  
+  if (!customer) {
+    redirect("/login?redirect=/dashboard/ati-plus");
+  }
+
   const member = customer.isAtiPlusMember ? await getAtiMemberByName(customer.name) : undefined;
 
   return (

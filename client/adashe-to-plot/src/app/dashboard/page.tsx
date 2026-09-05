@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Home, Wallet, Star, FileText, CalendarCheck, ArrowRight } from "lucide-react";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getSaleByCustomerId } from "@/services/sale.service";
@@ -16,7 +17,13 @@ import { formatNaira, formatDate } from "@/lib/payment";
 
 export default async function DashboardOverviewPage() {
   const customer = await getCurrentCustomer();
+
+  if (!customer) {
+    redirect("/login?redirect=/dashboard");
+  }
+
   const sale = await getSaleByCustomerId(customer.id);
+  
   const property = sale ? await getPropertyBySlug(sale.propertyId) : undefined;
   const estate = estates.find((e) => e.id === customer.estateId);
   const plan = await getPaymentPlanForEstate(customer.estateId);

@@ -1,3 +1,4 @@
+import {redirect} from "next/navigation";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getSaleByCustomerId } from "@/services/sale.service";
 import { getPaymentPlanForEstate } from "@/services/payment-plan.service";
@@ -9,6 +10,11 @@ import { Wallet, BellRing } from "lucide-react";
 
 export default async function DashboardPaymentsPage() {
   const customer = await getCurrentCustomer();
+  
+  if (!customer) {
+    redirect("/login?redirect=/dashboard/payments");
+  }
+
   const sale = await getSaleByCustomerId(customer.id);
 
   if (!sale) {

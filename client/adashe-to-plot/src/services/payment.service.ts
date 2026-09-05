@@ -1,81 +1,143 @@
 /**
- * Payment service — currently backed by a mock/simulated processor.
+ * Payment service.
  *
- * FUTURE REAL PAYMENT ARCHITECTURE:
+ * ARCHITECTURE:
  *
  *   Frontend
- *     -> POST /api/payments/initialize   (this file's future implementation)
+ *     -> POST /api/payments/initialize
  *     -> Backend
  *     -> Payment Gateway (e.g. Paystack)
  *     -> Checkout
  *     -> Payment Gateway
- *     -> Backend verification (webhook + amount check)
- *     -> Application/payment marked PAID in the database
- *     -> Frontend dashboard reflects the verified status
+ *     -> Backend verification / webhook
+ *     -> Payment marked PAID in database
+ *     -> Frontend reflects verified payment status
  *
- * A real payment gateway secret key must NEVER be placed in this frontend —
- * initialization, verification, webhooks and amount checks all belong on the
- * backend. This file's public functions (`processApplicationPayment`,
- * `initializePayment`) are the only thing the UI depends on, so swapping the
- * implementation later requires no changes to any page or component.
+ * IMPORTANT:
+ * Payment secrets, gateway secret keys, verification logic,
+ * webhook handling and amount validation belong on the backend.
+ *
+ * The frontend only communicates with the backend through
+ * the functions exported from this service.
  */
+
 import type { PaymentRequest, PaymentResult, Payment } from "@/types/payment";
-import { readStorage, writeStorage, STORAGE_KEYS } from "@/lib/storage";
 
-function generateMockReference(): string {
-  const date = new Date();
-  const datePart = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
-  const existing = readStorage<Payment[]>(STORAGE_KEYS.payments, []);
-  const sequence = String(existing.length + 1).padStart(4, "0");
-  return `APP-PAY-${datePart}-${sequence}`;
-}
-
-function recordPayment(payment: Payment): void {
-  const existing = readStorage<Payment[]>(STORAGE_KEYS.payments, []);
-  writeStorage(STORAGE_KEYS.payments, [...existing, payment]);
+async function parseResponse(response: Response): Promise<{
+  success: boolean;
+  status?: PaymentResult["status"];
+  reference?: string;
+  authorizationUrl?: string;
+  payment?: Payment;
+  payments?: Payment[];
+  error?: string;
+}> {
+  try {
+    return await response.json();
+  } catch {
+    return {
+      success: false,
+      error: "Unable to process the server response.",
+    };
+  }
 }
 
 /**
- * MOCK implementation — simulates a successful ₦15,000 Land Application fee
- * payment with a short artificial delay. No real money moves.
+ * Initialize an application payment.
  *
- * Later this becomes `initializePayment()`, which will call
- * `POST /api/payments/initialize`, redirect to the gateway's checkout, and
- * resolve only once the backend has verified the transaction via webhook.
+ * The backend should:
+ * 1. Validate the authenticated user.
+ * 2. Validate the application.
+ * 3. Validate the amount.
+ * 4. Create/initialize the payment with the gateway.
+ * 5. Return the payment reference and checkout URL.
+ *
+ * No payment is considered successful at this point.
  */
-export async function processApplicationPayment(request: PaymentRequest): Promise<PaymentResult> {
-  await new Promise((resolve) => setTimeout(resolve, 1400));
+export async function initializePayment(
+  request: PaymentRequest,
+): Promise<PaymentResult> {
+  try {
+    const response = await fetch("/api/payments/initialize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(request),
+    });
 
-  const reference = generateMockReference();
+    const result = await parseResponse(response);
 
-  recordPayment({
-    id: `payment-${Date.now()}`,
-    applicationId: request.applicationId,
-    amount: request.amount,
-    currency: "NGN",
-    type: "application_fee",
-    status: "success",
-    reference,
-    paidAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  });
+    if (!response.ok || !result.success) {
+      return {
+        success: false,
+        status: result.status ?? "failed",
+        error: result.error ?? "Unable to initialize payment.",
+      };
+    }
 
-  return { success: true, status: "success", reference };
+    return {
+      success: true,
+      status: result.status ?? "pending",
+      reference: result.reference,
+      authorizationUrl: result.authorizationUrl,
+    };
+  } catch (error) {
+    console.error("Initialize payment request failed:", error);
+
+    return {
+      success: false,
+      status: "failed",
+      error: "Unable to connect to the payment server. Please try again.",
+    };
+  }
 }
 
 /**
- * Placeholder for the future real payment gateway call. Intentionally
- * unimplemented — wiring this up means adding a backend route, never a
- * frontend secret key.
+ * Compatibility wrapper for the existing application flow.
+ *
+ * This function no longer simulates a payment.
+ * It delegates directly to the real payment initialization API.
  */
-export async function initializePayment(_request: PaymentRequest): Promise<PaymentResult> {
-  throw new Error(
-    "initializePayment() is not implemented yet — this frontend prototype uses processApplicationPayment() " +
-      "as a stand-in. Connect a backend /api/payments/initialize route (e.g. Paystack) to implement this."
-  );
+export async function processApplicationPayment(
+  request: PaymentRequest,
+): Promise<PaymentResult> {
+  return initializePayment(request);
 }
 
-export async function getPaymentsByApplicationId(applicationId: string): Promise<Payment[]> {
-  const all = readStorage<Payment[]>(STORAGE_KEYS.payments, []);
-  return all.filter((p) => p.applicationId === applicationId);
+/**
+ * Get payments belonging to an application.
+ *
+ * The backend must verify that the authenticated customer
+ * is allowed to access the requested application.
+ */
+export async function getPaymentsByApplicationId(
+  applicationId: string,
+): Promise<Payment[]> {
+  try {
+    const response = await fetch(
+      `/api/payments/application/${encodeURIComponent(applicationId)}`,
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const result = await parseResponse(response);
+
+    if (!result.success) {
+      return [];
+    }
+
+    return result.payments ?? [];
+  } catch (error) {
+    console.error("Get application payments request failed:", error);
+    return [];
+  }
 }

@@ -22,7 +22,6 @@ const items = [
   { href: "/admin/payment-plans", label: "Payment Plans", icon: CreditCard },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/ati-plus", label: "ATI Plus Members", icon: Star },
-  { href: "/admin/inspections", label: "Inspections", icon: CalendarCheck },
   { href: "/admin/applications", label: "Applications", icon: FileText },
   { href: "/admin/sales", label: "Sales", icon: BarChart3 },
 ];
@@ -49,9 +48,6 @@ export function AdminSidebar() {
             </Link>
           );
         })}
-        <span className="mt-2 hidden items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-navy-100/40 lg:flex">
-          <Settings className="h-4 w-4" /> Settings
-        </span>
       </nav>
     </aside>
   );

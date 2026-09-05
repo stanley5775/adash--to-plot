@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentCustomer } from "@/services/customer.service";
 import { getSaleByCustomerId } from "@/services/sale.service";
 import { getPropertyBySlug } from "@/services/property.service";
@@ -12,6 +13,11 @@ import { Home } from "lucide-react";
 
 export default async function MyPropertiesPage() {
   const customer = await getCurrentCustomer();
+
+  if (!customer) {
+    redirect("/login?redirect=/dashboard/properties");
+  }
+
   const sale = await getSaleByCustomerId(customer.id);
   const property = sale ? await getPropertyBySlug(sale.propertyId) : undefined;
   const estate = estates.find((e) => e.id === customer.estateId);
