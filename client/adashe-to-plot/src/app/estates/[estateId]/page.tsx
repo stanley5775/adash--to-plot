@@ -16,8 +16,8 @@ export default async function EstateDetailsPage({ params }: { params: Promise<{ 
   const estate = await getEstateBySlug(estateId);
   if (!estate) notFound();
 
-  const properties = await getPropertiesByEstateId(estate.id);
-  const plan = await getPaymentPlanForEstate(estate.id);
+  const properties = await getPropertiesByEstateId(estateId);
+  const plan = await getPaymentPlanForEstate(estateId);
 
   return (
     <div>

@@ -27,7 +27,7 @@ export default async function PropertyDetailsPage({ params }: { params: Promise<
   const property = await getPropertyBySlug(propertyId);
   if (!property) notFound();
 
-  const estate = estates.find((e) => e.id === property.estateId);
+  const estate = estates.find((e) => e.slug === property.estateId);
   const plan = await getPaymentPlanForEstate(property.estateId);
   const docs = getDocEntries(property.documentation);
 

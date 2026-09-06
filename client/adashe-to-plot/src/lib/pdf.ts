@@ -1,24 +1,35 @@
 /**
  * Client-side Land Application PDF generator.
  *
- * ARCHITECTURE: this is kept behind a single function so that when a real
- * backend exists, official documents can instead be generated and stored
- * server-side (e.g. rendered once at approval time and served from secure
- * storage) without any calling component needing to change — they'd simply
- * fetch a URL instead of calling generateApplicationPdf().
+ * Designed to visually follow the official
+ * Adashè-to-Plot / AMIO GLOBAL PROJECTS application form.
+ *
+ * When a real backend exists, this can be replaced by a
+ * server-generated official document without changing
+ * the calling component.
  */
+
 import { jsPDF } from "jspdf";
 import type { Application } from "@/types/application";
 import { formatNaira, formatDate } from "@/lib/payment";
-import { formatApplicationStatus } from "@/lib/application-status";
 
-async function loadLogoDataUrl(): Promise<string | null> {
+async function loadImageDataUrl(path: string): Promise<string | null> {
   try {
-    const response = await fetch("/images/logo.png");
+    const response = await fetch(path);
+
+    if (!response.ok) {
+      return null;
+    }
+
     const blob = await response.blob();
+
     return await new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
+
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
@@ -30,160 +41,607 @@ async function loadLogoDataUrl(): Promise<string | null> {
 export async function generateApplicationPdf(
   application: Application,
   estateName: string,
-  propertyTitle: string
+  propertyTitle: string,
 ): Promise<void> {
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 48;
-  let y = 56;
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4",
+  });
 
-  const logo = await loadLogoDataUrl();
-  if (logo) {
-    try {
-      doc.addImage(logo, "PNG", margin, y - 24, 120, 32);
-    } catch {
-      // If the image fails to decode, continue without it — the PDF is
-      // still complete and readable without the logo.
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const margin = 24;
+
+  /*
+   * Reference form colours
+   */
+  const GOLD: [number, number, number] = [133, 108, 0];
+  const BLUE: [number, number, number] = [83, 119, 226];
+  const RED: [number, number, number] = [235, 65, 65];
+  const BLACK: [number, number, number] = [20, 20, 20];
+  const WHITE: [number, number, number] = [255, 255, 255];
+
+  /*
+   * Load both logos.
+   *
+   * Adashè logo:
+   * /images/logo.png
+   *
+   * AMIO logo:
+   * /images/amio-logo.png
+   *
+   * If the AMIO logo does not exist, the PDF still works.
+   */
+  const adasheLogo = await loadImageDataUrl("/images/logo.png");
+  const amioLogo = await loadImageDataUrl("/images/amio-logo.png");
+
+  const applicant = application.applicant;
+  const property = application.property;
+
+  const fullName = `${applicant.surname} ${applicant.firstName}${
+    applicant.middleName ? ` ${applicant.middleName}` : ""
+  }`.trim();
+
+  /*
+   * ---------------------------------------------------------
+   * BASIC DRAWING HELPERS
+   * ---------------------------------------------------------
+   */
+
+  function drawPageBorder() {
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(2);
+
+    doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
+  }
+
+  function drawHeader() {
+    drawPageBorder();
+
+    /*
+     * Application number
+     */
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...RED);
+
+    doc.text(application.applicationNumber ?? "0001", pageWidth - 38, 34, {
+      align: "right",
+    });
+
+    /*
+     * AMIO logo / branding
+     */
+    if (amioLogo) {
+      try {
+        doc.addImage(amioLogo, "PNG", 25, 28, 90, 70);
+      } catch {
+        // Continue without logo.
+      }
+    }
+
+    /*
+     * AMIO GLOBAL PROJECTS text
+     */
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(25);
+    doc.setTextColor(...BLUE);
+
+    doc.text("AMIO", 195, 54, {
+      align: "center",
+    });
+
+    doc.setFontSize(20);
+
+    doc.text("GLOBAL PROJECTS", 195, 80, {
+      align: "center",
+    });
+
+    doc.setFontSize(12);
+    doc.setTextColor(...RED);
+
+    doc.text("RC: 043136", 195, 101, {
+      align: "center",
+    });
+
+    /*
+     * Vertical separator
+     */
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(2);
+
+    doc.line(300, 26, 300, 106);
+
+    /*
+     * Adashè logo
+     */
+    if (adasheLogo) {
+      try {
+        doc.addImage(adasheLogo, "PNG", 325, 35, 135, 65);
+      } catch {
+        // Continue without logo.
+      }
     }
   }
 
+  function drawFooter() {
+    /*
+     * Footer background
+     */
+    doc.setFillColor(...GOLD);
+
+    doc.rect(9, pageHeight - 38, pageWidth - 18, 29, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...BLACK);
+
+    doc.text("www.adashetoplot.org", 42, pageHeight - 19);
+
+    doc.text("achezyhomes@gmail.com", 225, pageHeight - 19);
+
+    doc.text("0708 403 8831", 465, pageHeight - 19);
+  }
+
+  function sectionTitle(title: string, y: number, subtitle?: string) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...BLUE);
+
+    doc.text(title, pageWidth / 2, y, { align: "center" });
+
+    if (subtitle) {
+      doc.setFontSize(11);
+
+      doc.text(subtitle, pageWidth / 2, y + 20, { align: "center" });
+    }
+  }
+
+  function fieldLine(
+    label: string,
+    value: string,
+    x: number,
+    y: number,
+    lineStart: number,
+    lineEnd: number,
+  ) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...BLACK);
+
+    doc.text(label, x, y);
+
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(1.4);
+
+    doc.line(lineStart, y + 3, lineEnd, y + 3);
+
+    if (value) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...BLACK);
+
+      doc.text(value, lineStart + 4, y - 2);
+    }
+  }
+
+  function checkbox(x: number, y: number, label: string, checked = false) {
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(1.5);
+
+    doc.rect(x, y - 13, 25, 25);
+
+    if (checked) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(...GOLD);
+
+      doc.text("✓", x + 4, y + 6);
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...BLACK);
+
+    doc.text(label, x + 32, y + 4);
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * PAGE 1
+   * APPLICANT BIO DATA
+   * ---------------------------------------------------------
+   */
+
+  drawHeader();
+
+  /*
+   * ₦15,000 block
+   */
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(10, 25, 48);
-  doc.text("LAND APPLICATION FORM", pageWidth - margin, y, { align: "right" });
+  doc.setFontSize(16);
+  doc.setTextColor(...RED);
+
+  doc.text(formatNaira(application.applicationFee || 15000), 18, 137);
+
+  doc.setFontSize(13);
+
+  doc.text("NON-REFUNDABLE", 18, 157);
+
+  doc.setFontSize(12);
+  doc.setTextColor(...BLUE);
+
+  doc.text("Sites and Services", 18, 177);
+
+  /*
+   * Passport box
+   */
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(1.5);
+
+  doc.roundedRect(385, 125, 165, 145, 8, 8);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(90, 96, 112);
-  doc.text("The Thrive Estate, Kuje, Abuja", pageWidth - margin, y + 14, { align: "right" });
-  doc.text("Developer: AMIO'S GLOBAL", pageWidth - margin, y + 26, { align: "right" });
-  doc.text("Exclusive Marketing Partner: Adashè-to-Plot by Achezy Homes Ltd", pageWidth - margin, y + 38, { align: "right" });
+  doc.setFontSize(14);
+  doc.setTextColor(...BLUE);
 
-  y += 64;
-  doc.setDrawColor(198, 151, 26);
+  doc.text("Affix 2 copies", 467, 183, { align: "center" });
+
+  doc.text("of", 467, 205, { align: "center" });
+
+  doc.text("your", 467, 227, { align: "center" });
+
+  doc.text("passport", 467, 249, { align: "center" });
+
+  /*
+   * Application Form banner
+   */
+  doc.setFillColor(...GOLD);
+
+  doc.roundedRect(90, 280, 415, 35, 8, 8, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(...WHITE);
+
+  doc.text("APPLICATION FORM", pageWidth / 2, 305, { align: "center" });
+
+  sectionTitle(
+    "APPLICANT BIO DATA",
+    338,
+    "Please fill in BLOCK LETTERS and TICK appropriately",
+  );
+
+  /*
+   * Applicant fields
+   */
+  fieldLine("NAME OF APPLICANT IN FULL:", fullName, 18, 385, 235, 565);
+
+  fieldLine(
+    "DATE OF BIRTH:",
+    applicant.dateOfBirth ? formatDate(applicant.dateOfBirth) : "",
+    18,
+    430,
+    115,
+    275,
+  );
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BLACK);
+
+  doc.text("GENDER:", 305, 430);
+
+  checkbox(355, 425, "MALE", applicant.sex?.toLowerCase() === "male");
+
+  checkbox(455, 425, "FEMALE", applicant.sex?.toLowerCase() === "female");
+
+  fieldLine("MARITAL STATUS:", "", 18, 475, 130, 470);
+
+  fieldLine("STATE OF ORIGIN:", applicant.stateOfOrigin, 18, 520, 125, 275);
+
+  fieldLine("NATIONALITY:", applicant.nationality, 300, 520, 370, 565);
+
+  fieldLine(
+    "RESIDENTIAL ADDRESS: (House No./Street/Town/State):",
+    applicant.residentialAddress,
+    18,
+    565,
+    300,
+    565,
+  );
+
+  doc.setDrawColor(...GOLD);
+  doc.line(18, 600, 565, 600);
+
+  fieldLine("PHONE:", applicant.phone1, 18, 640, 65, 275);
+
+  fieldLine("EMAIL:", applicant.email, 285, 640, 325, 565);
+
+  fieldLine("OCCUPATION:", applicant.occupation, 18, 685, 105, 300);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BLACK);
+
+  doc.text("SELF EMPLOYED?", 315, 685);
+
+  checkbox(400, 680, "YES");
+  checkbox(485, 680, "NO");
+
+  drawFooter();
+
+  /*
+   * ---------------------------------------------------------
+   * PAGE 2
+   * NEXT OF KIN + IDENTIFICATION
+   * ---------------------------------------------------------
+   */
+
+  doc.addPage();
+
+  drawHeader();
+
+  sectionTitle("NEXT OF KIN DETAILS", 145);
+
+  const kin = applicant.nextOfKin;
+
+  fieldLine("NAME IN FULL:", kin.fullName, 18, 195, 105, 565);
+
+  fieldLine("STATE OF ORIGIN:", "", 18, 240, 120, 285);
+
+  fieldLine("NATIONALITY:", "", 300, 240, 370, 565);
+
+  fieldLine(
+    "RESIDENTIAL ADDRESS: (House No./Street/Town/State):",
+    kin.address,
+    18,
+    285,
+    300,
+    565,
+  );
+
+  doc.line(18, 320, 565, 320);
+
+  fieldLine("PHONE:", kin.phone, 18, 365, 65, 275);
+
+  fieldLine("EMAIL:", "", 285, 365, 325, 565);
+
+  fieldLine("RELATIONSHIP:", kin.relationship, 18, 410, 115, 470);
+
+  sectionTitle("MEANS OF IDENTIFICATION", 475);
+
+  checkbox(40, 520, "Driver’s License");
+
+  checkbox(230, 520, "INT’L Passport");
+
+  checkbox(420, 520, "Voters Card");
+
+  checkbox(220, 580, "National I.D Card");
+
+  /*
+   * ID number box
+   */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BLACK);
+
+  doc.text("ID Number:", 30, 655);
+
+  doc.setDrawColor(...GOLD);
   doc.setLineWidth(1.5);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 28;
 
+  doc.rect(115, 625, 380, 55);
+
+  drawFooter();
+
+  /*
+   * ---------------------------------------------------------
+   * PAGE 3
+   * CORPORATE INFORMATION
+   * ---------------------------------------------------------
+   */
+
+  doc.addPage();
+
+  drawHeader();
+
+  sectionTitle(
+    "CORPORATE INFORMATION",
+    145,
+    "Fill only if applying as a Company",
+  );
+
+  const corporate = applicant.corporateInfo;
+
+  fieldLine("BUSINESS NAME:", corporate?.businessName ?? "", 18, 205, 125, 565);
+
+  fieldLine("RC NUMBER:", corporate?.rcNumber ?? "", 18, 255, 105, 565);
+
+  fieldLine(
+    "COMPANY ADDRESS:",
+    corporate?.companyAddress ?? "",
+    18,
+    305,
+    130,
+    565,
+  );
+
+  doc.line(18, 350, 565, 350);
+
+  fieldLine(
+    "NATURE OF BUSINESS:",
+    corporate?.natureOfBusiness ?? "",
+    18,
+    395,
+    150,
+    565,
+  );
+
+  fieldLine(
+    "COMPANY PHONE NUMBER:",
+    corporate?.companyPhone ?? "",
+    18,
+    445,
+    160,
+    565,
+  );
+
+  fieldLine("COMPANY EMAIL:", corporate?.companyEmail ?? "", 18, 495, 130, 565);
+
+  sectionTitle("HOW DID YOU HEAR ABOUT US?", 550, "TICK APPROPRIATELY");
+
+  const referral = applicant.referralSource;
+
+  checkbox(85, 610, "Marketer", referral === "Marketer");
+
+  checkbox(270, 610, "Social Media", referral === "Social Media");
+
+  checkbox(465, 610, "Referral", referral === "Referral");
+
+  checkbox(85, 665, "Website", referral === "Website");
+
+  checkbox(270, 665, "Staff", referral === "Staff");
+
+  checkbox(465, 665, "Advertisement", referral === "Advertisement");
+
+  checkbox(85, 720, "Others", referral === "Others");
+
+  fieldLine(
+    "Please Specify:",
+    applicant.referralOther ?? "",
+    180,
+    720,
+    270,
+    565,
+  );
+
+  drawFooter();
+
+  /*
+   * ---------------------------------------------------------
+   * PAGE 4
+   * PROPERTY INFORMATION
+   * ---------------------------------------------------------
+   */
+
+  doc.addPage();
+
+  drawHeader();
+
+  sectionTitle("PROPERTY INFORMATION", 145);
+
+  fieldLine("ESTATE NAME:", estateName, 18, 200, 115, 565);
+
+  fieldLine("ESTATE LOCATION:", "Kuje, Abuja", 18, 250, 130, 565);
+
+  fieldLine("PROPERTY SIZE:", `${property.plotSizeSqm}`, 18, 300, 120, 300);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BLACK);
+
+  doc.text("sqm", 305, 300);
+
+  /*
+   * Payment option
+   */
+  doc.text("PAYMENT OPTION:", 18, 350);
+
+  checkbox(
+    40,
+    390,
+    "Outright Payment",
+    property.paymentOption?.toLowerCase().includes("outright"),
+  );
+
+  checkbox(
+    280,
+    390,
+    "6 Months Payment Plan",
+    property.paymentOption?.toLowerCase().includes("6"),
+  );
+
+  /*
+   * Adashe payment plans
+   */
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(10, 25, 48);
-  doc.text(`Application Number: ${application.applicationNumber ?? "Pending"}`, margin, y);
-  y += 28;
+  doc.setTextColor(...BLACK);
 
-  const section = (title: string) => {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(10, 25, 48);
-    doc.text(title, margin, y);
-    y += 6;
-    doc.setDrawColor(226, 230, 238);
-    doc.setLineWidth(0.75);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 18;
-  };
+  doc.text("Adashe Payment Plans (Tick One)", pageWidth / 2, 445, {
+    align: "center",
+  });
 
-  const row = (label: string, value: string) => {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(98, 106, 125);
-    doc.text(label, margin, y);
-    doc.setTextColor(13, 18, 32);
-    doc.setFont("helvetica", "bold");
-    doc.text(value || "—", margin + 190, y);
-    y += 18;
-  };
+  const paymentOption = property.paymentOption?.toLowerCase() ?? "";
 
-  const a = application.applicant;
-  const p = application.property;
+  checkbox(55, 485, "8 Months", paymentOption.includes("8"));
 
-  section("Section A — Applicant Biodata");
-  row("Full Name", `${a.surname} ${a.firstName}${a.middleName ? ` ${a.middleName}` : ""}`);
-  row("Residential Address", a.residentialAddress);
-  row("Date of Birth", a.dateOfBirth ? formatDate(a.dateOfBirth) : "—");
-  row("Sex", a.sex ?? "—");
-  row("Nationality", a.nationality);
-  row("State of Origin", a.stateOfOrigin);
-  row("Phone Number", a.phone1);
-  if (a.phone2) row("Phone Number 2", a.phone2);
-  row("Email Address", a.email);
-  row("Occupation", a.occupation);
-  if (a.officeAddress) row("Office Address", a.officeAddress);
-  y += 8;
+  checkbox(195, 485, "12 Months", paymentOption.includes("12"));
 
-  section("Section B — Next of Kin");
-  row("Full Name", a.nextOfKin.fullName);
-  row("Relationship", a.nextOfKin.relationship);
-  row("Phone Number", a.nextOfKin.phone);
-  row("Address", a.nextOfKin.address);
-  y += 8;
+  checkbox(335, 485, "18 Months", paymentOption.includes("18"));
 
-  if (a.isCorporateApplicant && a.corporateInfo) {
-    section("Section C — Corporate Information");
-    row("Business Name", a.corporateInfo.businessName);
-    row("RC Number", a.corporateInfo.rcNumber);
-    row("Company Address", a.corporateInfo.companyAddress);
-    row("Nature of Business", a.corporateInfo.natureOfBusiness);
-    row("Company Phone", a.corporateInfo.companyPhone);
-    row("Company Email", a.corporateInfo.companyEmail);
-    y += 8;
-  }
+  checkbox(475, 485, "24 Months", paymentOption.includes("24"));
 
-  section("Section D — How Did You Hear About Us?");
-  row("Source", a.referralSource === "Others" ? `Others — ${a.referralOther ?? ""}` : a.referralSource);
-  y += 8;
+  /*
+   * Purpose of acquisition
+   */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...BLACK);
 
-  if (y > 620) {
-    doc.addPage();
-    y = 56;
-  }
+  doc.text("PURPOSE OF ACQUISITION:", 18, 545);
 
-  section("Section E — Property Information");
-  row("Estate Name", estateName);
-  row("Property", propertyTitle);
-  row("Plot Size", `${p.plotSizeSqm} sqm`);
-  row("Payment Option", p.paymentOption);
-  row("Purpose of Acquisition", p.acquisitionPurpose);
-  y += 8;
+  const purpose = property.acquisitionPurpose?.toLowerCase() ?? "";
 
-  section("Payment Information");
-  row("Land Application Fee", formatNaira(application.applicationFee));
-  row("Payment Reference", application.paymentReference ?? "—");
-  row("Payment Status", application.paidAt ? "Paid" : "Pending");
-  row("Application Status", formatApplicationStatus(application.status));
-  row("Date Started", formatDate(application.dateStarted));
-  if (application.dateSubmitted) row("Date Submitted", formatDate(application.dateSubmitted));
-  y += 16;
+  checkbox(55, 595, "Investment", purpose.includes("investment"));
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(9);
-  doc.setTextColor(130, 136, 150);
-  const declaration =
-    "I/We hereby declare that the information provided above is true and correct. I/We understand that the " +
-    "application fee/processing fee is non-refundable. This form does not guarantee allocation — allocation is " +
-    "subject to verification, payment, and approval by AMIO'S GLOBAL.";
-  const wrapped = doc.splitTextToSize(declaration, pageWidth - margin * 2);
-  doc.text(wrapped, margin, y);
-  y += wrapped.length * 12 + 24;
+  checkbox(260, 595, "Residential", purpose.includes("residential"));
 
-  doc.setDrawColor(226, 230, 238);
-  doc.line(margin, y, margin + 180, y);
-  doc.line(pageWidth - margin - 180, y, pageWidth - margin, y);
-  y += 12;
+  checkbox(465, 595, "Commercial", purpose.includes("commercial"));
+
+  /*
+   * Declaration
+   */
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(...RED);
+
+  doc.text("DECLARATION", pageWidth / 2, 655, { align: "center" });
+
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(98, 106, 125);
-  doc.text("Applicant Signature", margin, y);
-  doc.text("Date", pageWidth - margin - 90, y);
+  doc.setFontSize(16);
+  doc.setTextColor(...RED);
 
-  doc.setFontSize(8);
-  doc.setTextColor(150, 156, 168);
-  doc.text(
-    "Developed by AMIO'S GLOBAL  |  Marketed by Adashè-to-Plot — Achezy Homes Ltd",
-    pageWidth / 2,
-    doc.internal.pageSize.getHeight() - 32,
-    { align: "center" }
-  );
+  const declaration =
+    "I/We hereby declare that the information provided is true and correct.";
+
+  const wrappedDeclaration = doc.splitTextToSize(declaration, pageWidth - 70);
+
+  doc.text(wrappedDeclaration, pageWidth / 2, 700, {
+    align: "center",
+  });
+
+  /*
+   * Name
+   */
+  fieldLine("Name:", fullName, 18, 760, 65, 565);
+
+  /*
+   * Signature + Date
+   */
+  fieldLine("Signature:", "", 18, 805, 75, 300);
+
+  fieldLine("Date:", "", 320, 805, 365, 565);
+
+  drawFooter();
+
+  /*
+   * ---------------------------------------------------------
+   * SAVE
+   * ---------------------------------------------------------
+   */
 
   doc.save(`${application.applicationNumber ?? "land-application"}.pdf`);
 }
