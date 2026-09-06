@@ -17,7 +17,12 @@ type EstateFormValues = {
   nearbyLandmarks: string;
   status: string;
   mainImage: FileList;
-  galleryImages: FileList;
+
+  // 4 optional gallery images
+  galleryImage1: FileList;
+  galleryImage2: FileList;
+  galleryImage3: FileList;
+  galleryImage4: FileList;
 };
 
 const estateNames = [
@@ -35,7 +40,7 @@ const estateNames = [
   },
 ];
 
-export function EstateForm() {
+export function Property() {
   const {
     register,
     handleSubmit,
@@ -60,26 +65,39 @@ export function EstateForm() {
     formData.append("nearbyLandmarks", data.nearbyLandmarks);
     formData.append("status", data.status);
 
+    // Main image
     if (data.mainImage?.[0]) {
       formData.append("mainImage", data.mainImage[0]);
     }
 
-    if (data.galleryImages) {
-      Array.from(data.galleryImages)
-        .slice(0, 4)
-        .forEach((file) => {
-          formData.append("galleryImages", file);
-        });
+    // Gallery Image 1
+    if (data.galleryImage1?.[0]) {
+      formData.append("galleryImages", data.galleryImage1[0]);
     }
 
-    console.log(formData);
+    // Gallery Image 2
+    if (data.galleryImage2?.[0]) {
+      formData.append("galleryImages", data.galleryImage2[0]);
+    }
+
+    // Gallery Image 3
+    if (data.galleryImage3?.[0]) {
+      formData.append("galleryImages", data.galleryImage3[0]);
+    }
+
+    // Gallery Image 4
+    if (data.galleryImage4?.[0]) {
+      formData.append("galleryImages", data.galleryImage4[0]);
+    }
+
+    console.log("Estate FormData:", formData);
   }
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="grid grid-cols-1 gap-5 rounded-2xl border border-navy-800/10 bg-white p-6 sm:grid-cols-2 sm:p-8">
-      {/* estateNameId */}
+      {/* Estate Name */}
       <div>
         <Select
           label="Estate Name"
@@ -100,7 +118,7 @@ export function EstateForm() {
         )}
       </div>
 
-      {/* location */}
+      {/* Location */}
       <div>
         <Input
           label="Location"
@@ -118,7 +136,7 @@ export function EstateForm() {
         )}
       </div>
 
-      {/* city */}
+      {/* City */}
       <div>
         <Input
           label="City"
@@ -134,7 +152,7 @@ export function EstateForm() {
         )}
       </div>
 
-      {/* state */}
+      {/* State */}
       <div>
         <Input
           label="State"
@@ -152,7 +170,7 @@ export function EstateForm() {
         )}
       </div>
 
-      {/* startingPrice */}
+      {/* Starting Price */}
       <div>
         <Input
           label="Starting Price (₦)"
@@ -171,7 +189,7 @@ export function EstateForm() {
         )}
       </div>
 
-      {/* totalPlots */}
+      {/* Total Plots */}
       <div>
         <Input
           label="Total Plots"
@@ -190,7 +208,7 @@ export function EstateForm() {
         )}
       </div>
 
-      {/* status */}
+      {/* Status */}
       <div>
         <Select
           label="Status"
@@ -209,7 +227,7 @@ export function EstateForm() {
         />
       </div>
 
-      {/* description */}
+      {/* Description */}
       <div className="sm:col-span-2">
         <label
           htmlFor="description"
@@ -226,7 +244,7 @@ export function EstateForm() {
         />
       </div>
 
-      {/* features */}
+      {/* Features */}
       <div>
         <Input
           label="Features"
@@ -240,7 +258,7 @@ export function EstateForm() {
         </p>
       </div>
 
-      {/* nearbyLandmarks */}
+      {/* Nearby Landmarks */}
       <div>
         <Input
           label="Nearby Landmarks"
@@ -254,8 +272,8 @@ export function EstateForm() {
         </p>
       </div>
 
-      {/* mainImage */}
-      <div>
+      {/* Main Image */}
+      <div className="sm:col-span-2">
         <label htmlFor="mainImage" className="text-sm font-medium text-ink-700">
           Main Image
         </label>
@@ -267,29 +285,99 @@ export function EstateForm() {
           className="mt-1.5 w-full text-sm"
           {...register("mainImage")}
         />
+
+        <p className="mt-1 text-xs text-ink-500">Main property image.</p>
       </div>
 
-      {/* galleryImages */}
-      <div>
-        <label
-          htmlFor="galleryImages"
-          className="text-sm font-medium text-ink-700">
-          Gallery Images
-        </label>
+      {/* ================= GALLERY ================= */}
+      <div className="sm:col-span-2">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-navy-950">
+            Property Gallery
+          </h3>
 
-        <input
-          id="galleryImages"
-          type="file"
-          accept="image/*"
-          multiple
-          className="mt-1.5 w-full text-sm"
-          {...register("galleryImages")}
-        />
+          <p className="mt-1 text-xs text-ink-500">
+            Add up to 4 additional property images. All gallery images are
+            optional.
+          </p>
+        </div>
 
-        <p className="mt-1 text-xs text-ink-500">Maximum 4 gallery images.</p>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {/* Gallery Image 1 */}
+          <div>
+            <label
+              htmlFor="galleryImage1"
+              className="text-sm font-medium text-ink-700">
+              Gallery Image 1{" "}
+              <span className="font-normal text-ink-400">(optional)</span>
+            </label>
+
+            <input
+              id="galleryImage1"
+              type="file"
+              accept="image/*"
+              className="mt-1.5 w-full text-sm"
+              {...register("galleryImage1")}
+            />
+          </div>
+
+          {/* Gallery Image 2 */}
+          <div>
+            <label
+              htmlFor="galleryImage2"
+              className="text-sm font-medium text-ink-700">
+              Gallery Image 2{" "}
+              <span className="font-normal text-ink-400">(optional)</span>
+            </label>
+
+            <input
+              id="galleryImage2"
+              type="file"
+              accept="image/*"
+              className="mt-1.5 w-full text-sm"
+              {...register("galleryImage2")}
+            />
+          </div>
+
+          {/* Gallery Image 3 */}
+          <div>
+            <label
+              htmlFor="galleryImage3"
+              className="text-sm font-medium text-ink-700">
+              Gallery Image 3{" "}
+              <span className="font-normal text-ink-400">(optional)</span>
+            </label>
+
+            <input
+              id="galleryImage3"
+              type="file"
+              accept="image/*"
+              className="mt-1.5 w-full text-sm"
+              {...register("galleryImage3")}
+            />
+          </div>
+
+          {/* Gallery Image 4 */}
+          <div>
+            <label
+              htmlFor="galleryImage4"
+              className="text-sm font-medium text-ink-700">
+              Gallery Image 4{" "}
+              <span className="font-normal text-ink-400">(optional)</span>
+            </label>
+
+            <input
+              id="galleryImage4"
+              type="file"
+              accept="image/*"
+              className="mt-1.5 w-full text-sm"
+              {...register("galleryImage4")}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* submit */}
+      {/* Submit */}
       <div className="sm:col-span-2">
         <Button type="submit">Save Estate</Button>
       </div>

@@ -1,4 +1,4 @@
-import { EstateForm } from "@/components/admin/PropertyForm";
+import { Property } from "@/components/admin/PropertyForm";
 
 export default function AdminNewPropertyPage() {
   return (
@@ -9,7 +9,7 @@ export default function AdminNewPropertyPage() {
           Create a new property record (frontend-only for now).
         </p>
       </div>
-      <EstateForm />
+      <Property />
     </div>
   );
 }
