@@ -25,6 +25,9 @@ const estateNames = [
   },
 ];
 
+const nearbyLandmarks = (estate: Estate) =>
+  (estate as Estate & { nearbyLandmarks?: string[] }).nearbyLandmarks;
+
 const columns: Column<Estate>[] = [
   {
     header: "Estate",
@@ -59,8 +62,10 @@ const columns: Column<Estate>[] = [
   },
   {
     header: "Nearby Landmarks",
-    render: (estate) =>
-      estate.nearbyLandmarks?.length ? estate.nearbyLandmarks.join(", ") : "—",
+    render: (estate) => {
+      const landmarks = nearbyLandmarks(estate);
+      return landmarks?.length ? landmarks.join(", ") : "—";
+    },
   },
 ];
 
@@ -85,15 +90,15 @@ export default function AdminEstatePage() {
     setSelectedEstate(estate);
 
     setFormData({
-      estateNameId: estate.estateNameId,
+      estateNameId: estate.name,
       location: estate.location,
-      city: estate.city,
+      city: estate.state, // Assuming city is stored in the state field; adjust if needed
       state: estate.state,
       description: estate.description ?? "",
       startingPrice: String(estate.startingPrice ?? ""),
       totalPlots: String(estate.totalPlots ?? ""),
       features: estate.features?.join(", ") ?? "",
-      nearbyLandmarks: estate.nearbyLandmarks?.join(", ") ?? "",
+      nearbyLandmarks: nearbyLandmarks(estate)?.join(", ") ?? "",
     });
   }
 
@@ -107,7 +112,7 @@ export default function AdminEstatePage() {
   function handleSave() {
     // Connect your PUT/PATCH API here later.
     console.log("Update estate:", {
-      id: selectedEstate?.estateNameId,
+      id: selectedEstate?.name,
       ...formData,
     });
 
@@ -118,7 +123,7 @@ export default function AdminEstatePage() {
     if (!estateToDelete) return;
 
     // Connect your DELETE API here later.
-    console.log("Delete estate:", estateToDelete.estateNameId);
+    console.log("Delete estate:", estateToDelete.name);
 
     setEstateToDelete(null);
   }
