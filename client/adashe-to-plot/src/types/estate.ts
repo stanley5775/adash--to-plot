@@ -10,8 +10,9 @@ export interface Landmark {
 }
 
 export interface Estate {
-  id: string;
+  estateNameId: string;
   slug: string;
+  city: string;
   name: string;
   location: string;
   state: string;
@@ -26,7 +27,7 @@ export interface Estate {
   coverImage: string;
   gallery: string[];
   features: string[];
-  landmarks: Landmark[];
+  nearbyLandmarks: Landmark[];
   propertyIds: string[];
   paymentPlanMonths: number[];
 }

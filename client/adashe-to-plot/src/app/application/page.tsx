@@ -1,613 +1,777 @@
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  LoaderCircle,
   ShieldCheck,
-  Download,
-  LayoutDashboard,
-  AlertTriangle,
 } from "lucide-react";
+import { useForm } from "react-hook-form";
+
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import { LoadingState } from "@/components/ui/LoadingState";
-import { getCurrentUser } from "@/services/auth.service";
-import { getEstates } from "@/services/estate.service";
-import { getPropertiesByEstateId } from "@/services/property.service";
-import {
-  createApplication,
-  submitApplication,
-} from "@/services/application.service";
-import { processApplicationPayment } from "@/services/payment.service";
-import { generateApplicationPdf } from "@/lib/pdf";
-import { formatNaira } from "@/lib/payment";
-import { LAND_APPLICATION_FEE } from "@/data/application-fee";
-import type { AuthUser } from "@/types/auth";
-import type { Estate } from "@/types/estate";
-import type { Property } from "@/types/property";
-import type {
-  ApplicantInfo,
-  ApplicationPaymentOption,
-  AcquisitionPurpose,
-  ReferralSource,
-  Application,
-} from "@/types/application";
 
-const REFERRAL_SOURCES: ReferralSource[] = [
-  "Marketer",
-  "Social Media",
-  "Referral",
-  "Advertisement",
-  "Website",
-  "Staff",
-  "Others",
-];
-const ACQUISITION_PURPOSES: AcquisitionPurpose[] = [
-  "Investment",
-  "Residential",
-  "Commercial",
+const LAND_APPLICATION_FEE = 20000;
+
+type FormValues = {
+  surname: string;
+  firstName: string;
+  middleName: string;
+  sex: string;
+  residentialAddress: string;
+  dateOfBirth: string;
+  nationality: string;
+  stateOfOrigin: string;
+  phone1: string;
+  phone2: string;
+  email: string;
+  occupation: string;
+  officeAddress: string;
+
+  nextOfKinName: string;
+  nextOfKinRelationship: string;
+  nextOfKinPhone: string;
+  nextOfKinAddress: string;
+
+  isCorporate: boolean;
+  businessName: string;
+  rcNumber: string;
+  companyAddress: string;
+  natureOfBusiness: string;
+  companyPhone: string;
+  companyEmail: string;
+
+  referralSource: string;
+  referralOther: string;
+
+  estate: string;
+  property: string;
+  plotSize: string;
+  paymentOption: string;
+  acquisitionPurpose: string;
+};
+
+const estates = [
+  { label: "Adashè Estate — Abuja", value: "adashe" },
+  { label: "Thrive Estate — Lagos", value: "thrive" },
+  { label: "AMIO Vista Homes — Enugu", value: "amio-vista" },
 ];
 
-function monthsToPaymentOption(months: number): ApplicationPaymentOption {
-  if (months === 0) return "Outright";
-  return `${months} Months` as ApplicationPaymentOption;
-}
+const properties = [
+  { label: "Premium Residential Plot — Plot 24", value: "plot-24" },
+  { label: "Residential Plot — Plot 18", value: "plot-18" },
+  { label: "Commercial Plot — Plot 12", value: "plot-12" },
+];
+
+const paymentOptions = [
+  { label: "Outright", value: "Outright" },
+  { label: "6 Months", value: "6 Months" },
+  { label: "12 Months", value: "12 Months" },
+  { label: "24 Months", value: "24 Months" },
+];
+
+const purposes = [
+  { label: "Residential", value: "Residential" },
+  { label: "Investment", value: "Investment" },
+  { label: "Commercial", value: "Commercial" },
+];
+
+const referralSources = [
+  { label: "Website", value: "Website" },
+  { label: "Marketer", value: "Marketer" },
+  { label: "Social Media", value: "Social Media" },
+  { label: "Referral", value: "Referral" },
+  { label: "Advertisement", value: "Advertisement" },
+  { label: "Staff", value: "Staff" },
+  { label: "Others", value: "Others" },
+];
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
-function emptyApplicant(user: AuthUser | null): ApplicantInfo {
-  const parts = user?.fullName.trim().split(" ") ?? [];
-  return {
-    surname: parts.length > 1 ? parts[parts.length - 1] : "",
-    firstName:
-      parts.length > 1 ? parts.slice(0, -1).join(" ") : (parts[0] ?? ""),
-    middleName: "",
-    residentialAddress: "",
-    dateOfBirth: "",
-    sex: undefined,
-    nationality: "Nigerian",
-    stateOfOrigin: "",
-    phone1: user?.phone ?? "",
-    phone2: "",
-    email: user?.email ?? "",
-    occupation: "",
-    officeAddress: "",
-    nextOfKin: { fullName: "", relationship: "", phone: "", address: "" },
-    isCorporateApplicant: false,
-    corporateInfo: undefined,
-    referralSource: "Website",
-    referralOther: "",
-  };
-}
-
 export default function LandApplicationPage() {
-  const router = useRouter();
-
-  const [authChecked, setAuthChecked] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
-
   const [step, setStep] = useState<Step>(1);
-  const [applicant, setApplicant] = useState<ApplicantInfo>(
-    emptyApplicant(null),
-  );
-  const [estateId, setEstateId] = useState("");
-  const [propertyId, setPropertyId] = useState("");
-  const [paymentOption, setPaymentOption] =
-    useState<ApplicationPaymentOption>("Outright");
-  const [acquisitionPurpose, setAcquisitionPurpose] =
-    useState<AcquisitionPurpose>("Residential");
+  const [submitted, setSubmitted] = useState(false);
 
-  const [estates, setEstates] = useState<Estate[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const {
+    register,
+    trigger,
+    watch,
+    getValues,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
+    mode: "onTouched",
 
-  const [stepError, setStepError] = useState<string | null>(null);
-  const [application, setApplication] = useState<Application | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<
-    "idle" | "processing" | "failed"
-  >("idle");
-  const [paymentReference, setPaymentReference] = useState<string | null>(null);
-  const [downloadError, setDownloadError] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+    defaultValues: {
+      surname: "",
+      firstName: "",
+      middleName: "",
+      sex: "",
+      residentialAddress: "",
+      dateOfBirth: "",
+      nationality: "Nigerian",
+      stateOfOrigin: "",
+      phone1: "",
+      phone2: "",
+      email: "",
+      occupation: "",
+      officeAddress: "",
 
-  useEffect(() => {
-    let active = true;
+      nextOfKinName: "",
+      nextOfKinRelationship: "",
+      nextOfKinPhone: "",
+      nextOfKinAddress: "",
 
-    const checkAuth = async () => {
-      const current = await getCurrentUser();
+      isCorporate: false,
+      businessName: "",
+      rcNumber: "",
+      companyAddress: "",
+      natureOfBusiness: "",
+      companyPhone: "",
+      companyEmail: "",
 
-      if (!active) return;
+      referralSource: "Website",
+      referralOther: "",
 
+      estate: "",
+      property: "",
+      plotSize: "500 sqm",
+      paymentOption: "Outright",
+      acquisitionPurpose: "Residential",
+    },
+  });
 
+  const isCorporate = watch("isCorporate");
+  const referralSource = watch("referralSource");
 
-      setUser(current);
-      setApplicant(emptyApplicant(current));
-      setAuthChecked(true);
+  async function nextStep() {
+    let fields: (keyof FormValues)[] = [];
 
-      const list = await getEstates();
+    if (step === 1) {
+      fields = [
+        "surname",
+        "firstName",
+        "sex",
+        "residentialAddress",
+        "dateOfBirth",
+        "nationality",
+        "stateOfOrigin",
+        "phone1",
+        "email",
+        "occupation",
+        "officeAddress",
+        "nextOfKinName",
+        "nextOfKinRelationship",
+        "nextOfKinPhone",
+        "nextOfKinAddress",
+        "referralSource",
+      ];
 
-      if (active) {
-        setEstates(list);
+      if (isCorporate) {
+        fields.push(
+          "businessName",
+          "rcNumber",
+          "companyAddress",
+          "natureOfBusiness",
+          "companyPhone",
+          "companyEmail",
+        );
       }
-    };
 
-    checkAuth();
-
-    return () => {
-      active = false;
-    };
-  }, [router]);
-
-  useEffect(() => {
-    if (!estateId) {
-      setProperties([]);
-      setPropertyId("");
-      return;
-    }
-    getPropertiesByEstateId(estateId).then((list) => {
-      setProperties(list);
-      setPropertyId(list[0]?.id ?? "");
-    });
-  }, [estateId]);
-
-  const selectedEstate = estates.find((e) => e.id === estateId);
-  const selectedProperty = properties.find((p) => p.id === propertyId);
-
-  const paymentOptions = useMemo(() => {
-    if (!selectedProperty) return [];
-    return selectedProperty.paymentPlanMonths.map(monthsToPaymentOption);
-  }, [selectedProperty]);
-
-  useEffect(() => {
-    if (paymentOptions.length > 0 && !paymentOptions.includes(paymentOption)) {
-      setPaymentOption(paymentOptions[0]);
-    }
-  }, [paymentOptions, paymentOption]);
-
-  function updateApplicant<K extends keyof ApplicantInfo>(
-    key: K,
-    value: ApplicantInfo[K],
-  ) {
-    setApplicant((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function updateNextOfKin<K extends keyof ApplicantInfo["nextOfKin"]>(
-    key: K,
-    value: string,
-  ) {
-    setApplicant((prev) => ({
-      ...prev,
-      nextOfKin: { ...prev.nextOfKin, [key]: value },
-    }));
-  }
-
-  function validateStep1(): string | null {
-    if (!applicant.surname.trim() || !applicant.firstName.trim())
-      return "Surname and first name are required.";
-    if (!applicant.residentialAddress.trim())
-      return "Residential address is required.";
-    if (!applicant.nationality.trim() || !applicant.stateOfOrigin.trim())
-      return "Nationality and state of origin are required.";
-    if (!applicant.phone1.trim()) return "A phone number is required.";
-    if (!applicant.email.trim()) return "Email address is required.";
-    if (!applicant.occupation.trim()) return "Occupation is required.";
-    if (
-      !applicant.nextOfKin.fullName.trim() ||
-      !applicant.nextOfKin.phone.trim()
-    ) {
-      return "Next of kin full name and phone number are required.";
-    }
-    if (
-      applicant.isCorporateApplicant &&
-      !applicant.corporateInfo?.businessName?.trim()
-    ) {
-      return "Business name is required for a corporate application.";
-    }
-    return null;
-  }
-
-  function validateStep2(): string | null {
-    if (!estateId) return "Select an estate.";
-    if (!propertyId) return "Select a property.";
-    if (!paymentOption) return "Select a payment option.";
-    return null;
-  }
-
-  function goNext() {
-    const error =
-      step === 1 ? validateStep1() : step === 2 ? validateStep2() : null;
-    if (error) {
-      setStepError(error);
-      return;
-    }
-    setStepError(null);
-    setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
-  }
-
-  function goBack() {
-    setStepError(null);
-    setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
-  }
-
-  async function handlePay() {
-    if (!selectedEstate || !selectedProperty) return;
-    setPaymentStatus("processing");
-
-    let currentApplication = application;
-    if (!currentApplication) {
-      currentApplication = await createApplication({
-        applicant,
-        property: {
-          estateId: selectedEstate.id,
-          propertyId: selectedProperty.id,
-          plotSizeSqm: selectedProperty.sizeSqm,
-          paymentOption,
-          acquisitionPurpose,
-        },
-      });
-      setApplication(currentApplication);
+      if (referralSource === "Others") {
+        fields.push("referralOther");
+      }
     }
 
-    const result = await processApplicationPayment({
-      amount: LAND_APPLICATION_FEE,
-      email: applicant.email,
-      applicationId: currentApplication.id,
-    });
-
-    if (!result.success || !result.reference) {
-      setPaymentStatus("failed");
-      return;
+    if (step === 2) {
+      fields = [
+        "estate",
+        "property",
+        "plotSize",
+        "paymentOption",
+        "acquisitionPurpose",
+      ];
     }
 
-    const submitted = await submitApplication(
-      currentApplication.id,
-      result.reference,
+    const valid = await trigger(fields);
+
+    if (!valid) return;
+
+    setStep((current) =>
+      current < 4 ? ((current + 1) as Step) : current,
     );
-    setApplication(submitted ?? currentApplication);
-    setPaymentReference(result.reference);
-    setPaymentStatus("idle");
+  }
+
+  function previousStep() {
+    setStep((current) =>
+      current > 1 ? ((current - 1) as Step) : current,
+    );
+  }
+
+  async function handlePayment() {
+    const valid = await trigger();
+
+    if (!valid) {
+      setStep(1);
+      return;
+    }
+
+    setSubmitted(true);
     setStep(5);
   }
 
-  async function handleDownload() {
-    if (!application || !selectedEstate || !selectedProperty) return;
-    setDownloading(true);
-    setDownloadError(false);
-    try {
-      await generateApplicationPdf(
-        application,
-        selectedEstate.name,
-        selectedProperty.title,
-      );
-    } catch {
-      setDownloadError(true);
-    } finally {
-      setDownloading(false);
-    }
+  function onSubmit(data: FormValues) {
+    console.log("Frontend form data:", data);
   }
 
-  if (!authChecked) {
-    return <LoadingState label="Checking your session" />;
+  if (submitted) {
+    return (
+      <div className="container-page py-12 sm:py-16">
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 rounded-3xl border border-navy-800/10 bg-white p-10 text-center">
+          <CheckCircle2 className="h-14 w-14 text-status-available" />
+
+          <h2 className="text-2xl font-bold text-navy-950">
+            🎉 Application Submitted Successfully
+          </h2>
+
+          <p className="max-w-md text-sm text-ink-500">
+            Your land application has been submitted successfully.
+            This is a frontend-only demonstration.
+          </p>
+
+          <div className="grid w-full max-w-sm grid-cols-2 gap-4 rounded-2xl bg-navy-50 p-5 text-left">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-ink-300">
+                Application Number
+              </p>
+              <p className="font-bold text-navy-950">
+                APP-001234
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-ink-300">
+                Payment
+              </p>
+              <p className="font-bold text-navy-950">
+                ₦{LAND_APPLICATION_FEE.toLocaleString()}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-ink-300">
+                Status
+              </p>
+              <p className="font-bold text-status-available">
+                Paid
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-ink-300">
+                Reference
+              </p>
+              <p className="truncate font-bold text-navy-950">
+                PAY-APP-001234
+              </p>
+            </div>
+          </div>
+
+          <Button onClick={() => setSubmitted(false)}>
+            Back to Application
+          </Button>
+
+          <p className="flex items-center gap-1.5 text-xs text-ink-400">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            This is a frontend-only prototype.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container-page py-12 sm:py-16">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="container-page py-12 sm:py-16"
+    >
       <div className="mx-auto max-w-3xl">
-        {step < 5 && (
-          <>
-            <div className="max-w-2xl">
-              <span className="gold-rule mb-4 block" />
-              <h1 className="text-3xl font-bold tracking-tight text-navy-950">
-                Land Application
-              </h1>
-              <p className="mt-2 text-ink-500">
-                Complete The Thrive Estate / AMIO Vista Homes Land Application
-                Form. A one-time ₦{LAND_APPLICATION_FEE.toLocaleString("en-NG")}{" "}
-                application fee applies, separate from your property payment
-                plan.
-              </p>
-            </div>
-            <StepIndicator step={step} />
-          </>
-        )}
+        <div className="max-w-2xl">
+          <span className="gold-rule mb-4 block" />
 
-        {stepError && (
-          <p className="mt-6 flex items-center gap-2 rounded-lg border border-status-sold/20 bg-[#f8e9e9] px-4 py-3 text-sm text-status-sold">
-            <AlertTriangle className="h-4 w-4 shrink-0" /> {stepError}
+          <h1 className="text-3xl font-bold tracking-tight text-navy-950">
+            Land Application
+          </h1>
+
+          <p className="mt-2 text-ink-500">
+            Complete the Land Application Form. A one-time ₦
+            {LAND_APPLICATION_FEE.toLocaleString()} application fee
+            applies.
           </p>
-        )}
+        </div>
+
+        <StepIndicator step={step} />
 
         {step === 1 && (
           <div className="mt-8 space-y-8">
             <Section title="Section A — Applicant Biodata">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
+                <Field
                   label="Surname"
-                  value={applicant.surname}
-                  onChange={(e) => updateApplicant("surname", e.target.value)}
-                  required
-                />
-                <Input
+                  error={errors.surname?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("surname", {
+                      required: "Surname is required",
+                      minLength: {
+                        value: 2,
+                        message:
+                          "Surname must be at least 2 characters",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
                   label="First name"
-                  value={applicant.firstName}
-                  onChange={(e) => updateApplicant("firstName", e.target.value)}
-                  required
-                />
-                <Input
+                  error={errors.firstName?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("firstName", {
+                      required: "First name is required",
+                      minLength: {
+                        value: 2,
+                        message:
+                          "First name must be at least 2 characters",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
                   label="Middle name"
-                  value={applicant.middleName ?? ""}
-                  onChange={(e) =>
-                    updateApplicant("middleName", e.target.value)
-                  }
-                />
-                <Select
+                  error={errors.middleName?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("middleName")}
+                  />
+                </Field>
+
+                <Field
                   label="Sex"
-                  value={applicant.sex ?? ""}
-                  onChange={(e) =>
-                    updateApplicant(
-                      "sex",
-                      e.target.value as ApplicantInfo["sex"],
-                    )
-                  }
-                  options={[
-                    { label: "Select", value: "" },
-                    { label: "Male", value: "Male" },
-                    { label: "Female", value: "Female" },
-                  ]}
-                />
+                  error={errors.sex?.message}
+                >
+                  <Select
+                    label=""
+                    {...register("sex", {
+                      required: "Please select your sex",
+                    })}
+                    options={[
+                      { label: "Select", value: "" },
+                      { label: "Male", value: "Male" },
+                      { label: "Female", value: "Female" },
+                    ]}
+                  />
+                </Field>
+
                 <div className="sm:col-span-2">
-                  <Input
+                  <Field
                     label="Residential address"
-                    value={applicant.residentialAddress}
-                    onChange={(e) =>
-                      updateApplicant("residentialAddress", e.target.value)
-                    }
-                    required
-                  />
+                    error={errors.residentialAddress?.message}
+                  >
+                    <Input
+                      label=""
+                      {...register("residentialAddress", {
+                        required:
+                          "Residential address is required",
+                        minLength: {
+                          value: 5,
+                          message:
+                            "Please enter a valid address",
+                        },
+                      })}
+                    />
+                  </Field>
                 </div>
-                <Input
+
+                <Field
                   label="Date of birth"
-                  type="date"
-                  value={applicant.dateOfBirth ?? ""}
-                  onChange={(e) =>
-                    updateApplicant("dateOfBirth", e.target.value)
-                  }
-                />
-                <Input
-                  label="Nationality"
-                  value={applicant.nationality}
-                  onChange={(e) =>
-                    updateApplicant("nationality", e.target.value)
-                  }
-                  required
-                />
-                <Input
-                  label="State of origin"
-                  value={applicant.stateOfOrigin}
-                  onChange={(e) =>
-                    updateApplicant("stateOfOrigin", e.target.value)
-                  }
-                  required
-                />
-                <Input
-                  label="Phone number 1"
-                  type="tel"
-                  value={applicant.phone1}
-                  onChange={(e) => updateApplicant("phone1", e.target.value)}
-                  required
-                />
-                <Input
-                  label="Phone number 2"
-                  type="tel"
-                  value={applicant.phone2 ?? ""}
-                  onChange={(e) => updateApplicant("phone2", e.target.value)}
-                />
-                <Input
-                  label="Email address"
-                  type="email"
-                  value={applicant.email}
-                  onChange={(e) => updateApplicant("email", e.target.value)}
-                  required
-                />
-                <Input
-                  label="Occupation"
-                  value={applicant.occupation}
-                  onChange={(e) =>
-                    updateApplicant("occupation", e.target.value)
-                  }
-                  required
-                />
-                <div className="sm:col-span-2">
+                  error={errors.dateOfBirth?.message}
+                >
                   <Input
-                    label="Office address"
-                    value={applicant.officeAddress ?? ""}
-                    onChange={(e) =>
-                      updateApplicant("officeAddress", e.target.value)
-                    }
+                    label=""
+                    type="date"
+                    {...register("dateOfBirth", {
+                      required: "Date of birth is required",
+                    })}
                   />
+                </Field>
+
+                <Field
+                  label="Nationality"
+                  error={errors.nationality?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("nationality", {
+                      required: "Nationality is required",
+                      minLength: {
+                        value: 2,
+                        message:
+                          "Nationality must be at least 2 characters",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
+                  label="State of origin"
+                  error={errors.stateOfOrigin?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("stateOfOrigin", {
+                      required: "State of origin is required",
+                      minLength: {
+                        value: 2,
+                        message:
+                          "State of origin must be at least 2 characters",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
+                  label="Phone number 1"
+                  error={errors.phone1?.message}
+                >
+                  <Input
+                    label=""
+                    type="tel"
+                    {...register("phone1", {
+                      required: "Phone number is required",
+                      pattern: {
+                        value: /^\+?[0-9]{10,15}$/,
+                        message:
+                          "Enter a valid phone number",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
+                  label="Phone number 2"
+                  error={errors.phone2?.message}
+                >
+                  <Input
+                    label=""
+                    type="tel"
+                    {...register("phone2", {
+                      pattern: {
+                        value: /^\+?[0-9]{10,15}$/,
+                        message:
+                          "Enter a valid phone number",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
+                  label="Email address"
+                  error={errors.email?.message}
+                >
+                  <Input
+                    label=""
+                    type="email"
+                    {...register("email", {
+                      required: "Email address is required",
+                      pattern: {
+                        value:
+                          /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message:
+                          "Enter a valid email address",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
+                  label="Occupation"
+                  error={errors.occupation?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("occupation", {
+                      required: "Occupation is required",
+                      minLength: {
+                        value: 2,
+                        message:
+                          "Occupation must be at least 2 characters",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <div className="sm:col-span-2">
+                  <Field
+                    label="Office address"
+                    error={errors.officeAddress?.message}
+                  >
+                    <Input
+                      label=""
+                      {...register("officeAddress", {
+                        required:
+                          "Office address is required",
+                        minLength: {
+                          value: 5,
+                          message:
+                            "Please enter a valid office address",
+                        },
+                      })}
+                    />
+                  </Field>
                 </div>
               </div>
             </Section>
 
             <Section title="Section B — Next of Kin">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
+                <Field
                   label="Full name"
-                  value={applicant.nextOfKin.fullName}
-                  onChange={(e) => updateNextOfKin("fullName", e.target.value)}
-                  required
-                />
-                <Input
+                  error={errors.nextOfKinName?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("nextOfKinName", {
+                      required:
+                        "Next of kin name is required",
+                      minLength: {
+                        value: 2,
+                        message:
+                          "Name must be at least 2 characters",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
                   label="Relationship"
-                  value={applicant.nextOfKin.relationship}
-                  onChange={(e) =>
-                    updateNextOfKin("relationship", e.target.value)
-                  }
-                />
-                <Input
+                  error={errors.nextOfKinRelationship?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("nextOfKinRelationship", {
+                      required: "Relationship is required",
+                    })}
+                  />
+                </Field>
+
+                <Field
                   label="Phone number"
-                  type="tel"
-                  value={applicant.nextOfKin.phone}
-                  onChange={(e) => updateNextOfKin("phone", e.target.value)}
-                  required
-                />
-                <Input
+                  error={errors.nextOfKinPhone?.message}
+                >
+                  <Input
+                    label=""
+                    type="tel"
+                    {...register("nextOfKinPhone", {
+                      required:
+                        "Next of kin phone is required",
+                      pattern: {
+                        value: /^\+?[0-9]{10,15}$/,
+                        message:
+                          "Enter a valid phone number",
+                      },
+                    })}
+                  />
+                </Field>
+
+                <Field
                   label="Address"
-                  value={applicant.nextOfKin.address}
-                  onChange={(e) => updateNextOfKin("address", e.target.value)}
-                />
+                  error={errors.nextOfKinAddress?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("nextOfKinAddress", {
+                      required:
+                        "Next of kin address is required",
+                      minLength: {
+                        value: 5,
+                        message:
+                          "Please enter a valid address",
+                      },
+                    })}
+                  />
+                </Field>
               </div>
             </Section>
 
-            <Section title="Section C — Corporate Information (optional)">
+            <Section title="Section C — Corporate Information">
               <label className="flex items-center gap-2 text-sm text-ink-700">
                 <input
                   type="checkbox"
-                  checked={applicant.isCorporateApplicant}
-                  onChange={(e) =>
-                    setApplicant((prev) => ({
-                      ...prev,
-                      isCorporateApplicant: e.target.checked,
-                      corporateInfo: e.target.checked
-                        ? (prev.corporateInfo ?? {
-                            businessName: "",
-                            rcNumber: "",
-                            companyAddress: "",
-                            natureOfBusiness: "",
-                            companyPhone: "",
-                            companyEmail: "",
-                          })
-                        : undefined,
-                    }))
-                  }
-                  className="h-4 w-4 rounded border-navy-800/20 text-navy-800 focus:ring-navy-600"
+                  {...register("isCorporate")}
+                  className="h-4 w-4 rounded border-navy-800/20"
                 />
+
                 I am applying as a company
               </label>
-              {applicant.isCorporateApplicant && applicant.corporateInfo && (
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Input
+
+              {isCorporate && (
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field
                     label="Business name"
-                    value={applicant.corporateInfo.businessName}
-                    onChange={(e) =>
-                      setApplicant((p) => ({
-                        ...p,
-                        corporateInfo: {
-                          ...p.corporateInfo!,
-                          businessName: e.target.value,
-                        },
-                      }))
-                    }
-                    required
-                  />
-                  <Input
-                    label="RC number"
-                    value={applicant.corporateInfo.rcNumber}
-                    onChange={(e) =>
-                      setApplicant((p) => ({
-                        ...p,
-                        corporateInfo: {
-                          ...p.corporateInfo!,
-                          rcNumber: e.target.value,
-                        },
-                      }))
-                    }
-                  />
-                  <div className="sm:col-span-2">
+                    error={errors.businessName?.message}
+                  >
                     <Input
-                      label="Company address"
-                      value={applicant.corporateInfo.companyAddress}
-                      onChange={(e) =>
-                        setApplicant((p) => ({
-                          ...p,
-                          corporateInfo: {
-                            ...p.corporateInfo!,
-                            companyAddress: e.target.value,
-                          },
-                        }))
-                      }
+                      label=""
+                      {...register("businessName", {
+                        required: isCorporate
+                          ? "Business name is required"
+                          : false,
+                      })}
                     />
+                  </Field>
+
+                  <Field
+                    label="RC number"
+                    error={errors.rcNumber?.message}
+                  >
+                    <Input
+                      label=""
+                      {...register("rcNumber", {
+                        required: isCorporate
+                          ? "RC number is required"
+                          : false,
+                      })}
+                    />
+                  </Field>
+
+                  <div className="sm:col-span-2">
+                    <Field
+                      label="Company address"
+                      error={errors.companyAddress?.message}
+                    >
+                      <Input
+                        label=""
+                        {...register("companyAddress", {
+                          required: isCorporate
+                            ? "Company address is required"
+                            : false,
+                        })}
+                      />
+                    </Field>
                   </div>
-                  <Input
+
+                  <Field
                     label="Nature of business"
-                    value={applicant.corporateInfo.natureOfBusiness}
-                    onChange={(e) =>
-                      setApplicant((p) => ({
-                        ...p,
-                        corporateInfo: {
-                          ...p.corporateInfo!,
-                          natureOfBusiness: e.target.value,
-                        },
-                      }))
-                    }
-                  />
-                  <Input
+                    error={errors.natureOfBusiness?.message}
+                  >
+                    <Input
+                      label=""
+                      {...register("natureOfBusiness", {
+                        required: isCorporate
+                          ? "Nature of business is required"
+                          : false,
+                      })}
+                    />
+                  </Field>
+
+                  <Field
                     label="Company phone"
-                    type="tel"
-                    value={applicant.corporateInfo.companyPhone}
-                    onChange={(e) =>
-                      setApplicant((p) => ({
-                        ...p,
-                        corporateInfo: {
-                          ...p.corporateInfo!,
-                          companyPhone: e.target.value,
+                    error={errors.companyPhone?.message}
+                  >
+                    <Input
+                      label=""
+                      type="tel"
+                      {...register("companyPhone", {
+                        required: isCorporate
+                          ? "Company phone is required"
+                          : false,
+                        pattern: {
+                          value: /^\+?[0-9]{10,15}$/,
+                          message:
+                            "Enter a valid phone number",
                         },
-                      }))
-                    }
-                  />
-                  <Input
+                      })}
+                    />
+                  </Field>
+
+                  <Field
                     label="Company email"
-                    type="email"
-                    value={applicant.corporateInfo.companyEmail}
-                    onChange={(e) =>
-                      setApplicant((p) => ({
-                        ...p,
-                        corporateInfo: {
-                          ...p.corporateInfo!,
-                          companyEmail: e.target.value,
+                    error={errors.companyEmail?.message}
+                  >
+                    <Input
+                      label=""
+                      type="email"
+                      {...register("companyEmail", {
+                        required: isCorporate
+                          ? "Company email is required"
+                          : false,
+                        pattern: {
+                          value:
+                            /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                          message:
+                            "Enter a valid email address",
                         },
-                      }))
-                    }
-                  />
+                      })}
+                    />
+                  </Field>
                 </div>
               )}
             </Section>
 
             <Section title="Section D — How did you hear about us?">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Select
+                <Field
                   label="Source"
-                  value={applicant.referralSource}
-                  onChange={(e) =>
-                    updateApplicant(
-                      "referralSource",
-                      e.target.value as ReferralSource,
-                    )
-                  }
-                  options={REFERRAL_SOURCES.map((s) => ({
-                    label: s,
-                    value: s,
-                  }))}
-                />
-                {applicant.referralSource === "Others" && (
-                  <Input
-                    label="Please specify"
-                    value={applicant.referralOther ?? ""}
-                    onChange={(e) =>
-                      updateApplicant("referralOther", e.target.value)
-                    }
+                  error={errors.referralSource?.message}
+                >
+                  <Select
+                    label=""
+                    {...register("referralSource", {
+                      required:
+                        "Please select a referral source",
+                    })}
+                    options={[
+                      {
+                        label: "Select source",
+                        value: "",
+                      },
+                      ...referralSources,
+                    ]}
                   />
+                </Field>
+
+                {referralSource === "Others" && (
+                  <Field
+                    label="Please specify"
+                    error={errors.referralOther?.message}
+                  >
+                    <Input
+                      label=""
+                      {...register("referralOther", {
+                        required:
+                          "Please specify how you heard about us",
+                      })}
+                    />
+                  </Field>
                 )}
               </div>
             </Section>
 
             <div className="flex justify-end">
-              <Button onClick={goNext}>
-                Continue <ChevronRight className="h-4 w-4" />
+              <Button
+                type="button"
+                onClick={nextStep}
+              >
+                Continue
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -617,101 +781,190 @@ export default function LandApplicationPage() {
           <div className="mt-8 space-y-8">
             <Section title="Section E — Property Information">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Select
+                <Field
                   label="Estate"
-                  value={estateId}
-                  onChange={(e) => setEstateId(e.target.value)}
-                  options={[
-                    { label: "Select an estate", value: "" },
-                    ...estates.map((e) => ({
-                      label: `${e.name} — ${e.location}`,
-                      value: e.id,
-                    })),
-                  ]}
-                />
-                <Select
+                  error={errors.estate?.message}
+                >
+                  <Select
+                    label=""
+                    {...register("estate", {
+                      required: "Please select an estate",
+                    })}
+                    options={[
+                      {
+                        label: "Select an estate",
+                        value: "",
+                      },
+                      ...estates,
+                    ]}
+                  />
+                </Field>
+
+                <Field
                   label="Property / plot"
-                  value={propertyId}
-                  onChange={(e) => setPropertyId(e.target.value)}
-                  options={
-                    properties.length > 0
-                      ? properties.map((p) => ({
-                          label: `${p.title} (Plot ${p.plotNumber})`,
-                          value: p.id,
-                        }))
-                      : [{ label: "Select an estate first", value: "" }]
-                  }
-                />
-                <Input
+                  error={errors.property?.message}
+                >
+                  <Select
+                    label=""
+                    {...register("property", {
+                      required:
+                        "Please select a property",
+                    })}
+                    options={[
+                      {
+                        label: "Select a property",
+                        value: "",
+                      },
+                      ...properties,
+                    ]}
+                  />
+                </Field>
+
+                <Field
                   label="Plot size"
-                  value={
-                    selectedProperty ? `${selectedProperty.sizeSqm} sqm` : "—"
-                  }
-                  disabled
-                />
-                <Select
+                  error={errors.plotSize?.message}
+                >
+                  <Input
+                    label=""
+                    {...register("plotSize", {
+                      required: "Plot size is required",
+                    })}
+                  />
+                </Field>
+
+                <Field
                   label="Payment option"
-                  value={paymentOption}
-                  onChange={(e) =>
-                    setPaymentOption(e.target.value as ApplicationPaymentOption)
-                  }
-                  options={paymentOptions.map((o) => ({ label: o, value: o }))}
-                />
-                <Select
+                  error={errors.paymentOption?.message}
+                >
+                  <Select
+                    label=""
+                    {...register("paymentOption", {
+                      required:
+                        "Please select a payment option",
+                    })}
+                    options={paymentOptions}
+                  />
+                </Field>
+
+                <Field
                   label="Purpose of acquisition"
-                  value={acquisitionPurpose}
-                  onChange={(e) =>
-                    setAcquisitionPurpose(e.target.value as AcquisitionPurpose)
-                  }
-                  options={ACQUISITION_PURPOSES.map((p) => ({
-                    label: p,
-                    value: p,
-                  }))}
-                />
+                  error={errors.acquisitionPurpose?.message}
+                >
+                  <Select
+                    label=""
+                    {...register("acquisitionPurpose", {
+                      required:
+                        "Please select a purpose",
+                    })}
+                    options={purposes}
+                  />
+                </Field>
               </div>
             </Section>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={goBack}>
-                <ChevronLeft className="h-4 w-4" /> Back
+              <Button
+                type="button"
+                variant="outline"
+                onClick={previousStep}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back
               </Button>
-              <Button onClick={goNext}>
-                Review Application <ChevronRight className="h-4 w-4" />
+
+              <Button
+                type="button"
+                onClick={nextStep}
+              >
+                Review Application
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
 
-        {step === 3 && selectedEstate && selectedProperty && (
+        {step === 3 && (
           <div className="mt-8 space-y-6">
             <Section title="Review Your Application">
               <dl className="space-y-3 text-sm">
                 <ReviewRow
                   label="Applicant"
-                  value={`${applicant.surname} ${applicant.firstName}${applicant.middleName ? ` ${applicant.middleName}` : ""}`}
+                  value={`${getValues("surname")} ${getValues(
+                    "firstName",
+                  )}`}
                 />
-                <ReviewRow label="Email" value={applicant.email} />
-                <ReviewRow label="Phone" value={applicant.phone1} />
+
+                <ReviewRow
+                  label="Email"
+                  value={getValues("email")}
+                />
+
+                <ReviewRow
+                  label="Phone"
+                  value={getValues("phone1")}
+                />
+
                 <ReviewRow
                   label="Address"
-                  value={applicant.residentialAddress}
+                  value={getValues(
+                    "residentialAddress",
+                  )}
                 />
-                <ReviewRow label="Occupation" value={applicant.occupation} />
+
+                <ReviewRow
+                  label="Occupation"
+                  value={getValues("occupation")}
+                />
+
                 <ReviewRow
                   label="Next of kin"
-                  value={`${applicant.nextOfKin.fullName} (${applicant.nextOfKin.relationship || "—"})`}
+                  value={`${getValues(
+                    "nextOfKinName",
+                  )} (${getValues(
+                    "nextOfKinRelationship",
+                  )})`}
                 />
-                <ReviewRow label="Estate" value={selectedEstate.name} />
+
+                <ReviewRow
+                  label="Estate"
+                  value={
+                    estates.find(
+                      (e) =>
+                        e.value ===
+                        getValues("estate"),
+                    )?.label ?? ""
+                  }
+                />
+
                 <ReviewRow
                   label="Property"
-                  value={`${selectedProperty.title} — Plot ${selectedProperty.plotNumber}`}
+                  value={
+                    properties.find(
+                      (p) =>
+                        p.value ===
+                        getValues("property"),
+                    )?.label ?? ""
+                  }
                 />
+
                 <ReviewRow
                   label="Plot size"
-                  value={`${selectedProperty.sizeSqm} sqm`}
+                  value={getValues("plotSize")}
                 />
-                <ReviewRow label="Payment option" value={paymentOption} />
-                <ReviewRow label="Purpose" value={acquisitionPurpose} />
+
+                <ReviewRow
+                  label="Payment option"
+                  value={getValues(
+                    "paymentOption",
+                  )}
+                />
+
+                <ReviewRow
+                  label="Purpose"
+                  value={getValues(
+                    "acquisitionPurpose",
+                  )}
+                />
               </dl>
             </Section>
 
@@ -719,174 +972,169 @@ export default function LandApplicationPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-gold-700">
                 One-Time Application Fee
               </p>
+
               <p className="mt-1 text-2xl font-bold text-navy-950">
-                {formatNaira(LAND_APPLICATION_FEE)}
+                ₦{LAND_APPLICATION_FEE.toLocaleString()}
               </p>
+
               <p className="mt-1 text-xs text-ink-500">
-                This fee is separate from your property payment plan and is not
-                added to your outright or installment payments.
+                This fee is separate from your property
+                payment plan.
               </p>
             </div>
 
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)}>
-                <ChevronLeft className="h-4 w-4" /> Edit Application
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Edit Application
               </Button>
-              <Button onClick={() => setStep(4)}>
-                Continue to Payment <ChevronRight className="h-4 w-4" />
+
+              <Button
+                type="button"
+                onClick={() => setStep(4)}
+              >
+                Continue to Payment
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
 
-        {step === 4 && selectedEstate && selectedProperty && (
+        {step === 4 && (
           <div className="mt-8">
             <Section title="Land Application Payment">
               <div className="flex flex-col gap-5">
                 <div className="flex items-center justify-between border-b border-navy-800/10 pb-4">
-                  <span className="text-sm text-ink-500">Application Fee</span>
+                  <span className="text-sm text-ink-500">
+                    Application Fee
+                  </span>
+
                   <span className="text-2xl font-bold text-navy-950">
-                    {formatNaira(LAND_APPLICATION_FEE)}
+                    ₦{LAND_APPLICATION_FEE.toLocaleString()}
                   </span>
                 </div>
+
                 <ReviewRow
                   label="Applicant"
-                  value={`${applicant.surname} ${applicant.firstName}`}
+                  value={`${getValues(
+                    "surname",
+                  )} ${getValues("firstName")}`}
                 />
-                <ReviewRow label="Email" value={applicant.email} />
+
+                <ReviewRow
+                  label="Email"
+                  value={getValues("email")}
+                />
+
                 <ReviewRow
                   label="Property"
-                  value={`${selectedProperty.title} — ${selectedEstate.name}`}
+                  value={
+                    properties.find(
+                      (p) =>
+                        p.value ===
+                        getValues("property"),
+                    )?.label ?? ""
+                  }
                 />
 
-                {paymentStatus === "failed" && (
-                  <p className="flex items-center gap-2 rounded-lg border border-status-sold/20 bg-[#f8e9e9] px-4 py-3 text-sm text-status-sold">
-                    <AlertTriangle className="h-4 w-4 shrink-0" /> Your payment
-                    could not be completed. Please try again.
+                <div className="rounded-xl border border-gold-400/40 bg-gold-50 p-4">
+                  <p className="text-sm text-ink-600">
+                    You are about to pay{" "}
+                    <strong className="text-navy-950">
+                      ₦
+                      {LAND_APPLICATION_FEE.toLocaleString()}
+                    </strong>{" "}
+                    as your one-time land application
+                    fee.
                   </p>
-                )}
+                </div>
 
                 <Button
-                  onClick={handlePay}
-                  disabled={paymentStatus === "processing"}
+                  type="button"
                   size="lg"
+                  onClick={handlePayment}
                 >
-                  {paymentStatus === "processing" ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />{" "}
-                      Processing payment…
-                    </>
-                  ) : (
-                    `Pay ${formatNaira(LAND_APPLICATION_FEE)}`
-                  )}
+                  Pay ₦
+                  {LAND_APPLICATION_FEE.toLocaleString()}
                 </Button>
+
                 <p className="text-center text-xs text-ink-400">
-                  This is a simulated payment for demonstration — no real money
-                  moves. A live payment gateway (e.g. Paystack) will replace
-                  this step once the backend is connected.
+                  This is a frontend-only payment
+                  interface. No real payment will be
+                  processed.
                 </p>
               </div>
             </Section>
 
-            {paymentStatus !== "processing" && (
-              <div className="mt-6">
-                <Button variant="outline" onClick={() => setStep(3)}>
-                  <ChevronLeft className="h-4 w-4" /> Back to Review
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === 5 && application && selectedEstate && selectedProperty && (
-          <div className="mt-8 flex flex-col items-center gap-4 rounded-3xl border border-navy-800/10 bg-white p-10 text-center">
-            <CheckCircle2 className="h-14 w-14 text-status-available" />
-            <h2 className="text-2xl font-bold text-navy-950">
-              🎉 Application Submitted Successfully
-            </h2>
-            <p className="max-w-md text-sm text-ink-500">
-              Your Land Application for {selectedProperty.title} at{" "}
-              {selectedEstate.name} has been submitted.
-            </p>
-
-            <div className="mt-2 grid w-full max-w-sm grid-cols-2 gap-4 rounded-2xl bg-navy-50 p-5 text-left">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">
-                  Application Number
-                </p>
-                <p className="font-bold text-navy-950">
-                  {application.applicationNumber}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">
-                  Payment
-                </p>
-                <p className="font-bold text-navy-950">
-                  {formatNaira(LAND_APPLICATION_FEE)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">
-                  Status
-                </p>
-                <p className="font-bold text-status-available">Paid</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">
-                  Reference
-                </p>
-                <p className="truncate font-bold text-navy-950">
-                  {paymentReference}
-                </p>
-              </div>
-            </div>
-
-            {downloadError && (
-              <p className="text-xs text-status-sold">
-                Couldn&apos;t generate the PDF — please try again.
-              </p>
-            )}
-
-            <div className="mt-2 flex flex-wrap justify-center gap-3">
-              <Button onClick={() => router.push("/dashboard/applications")}>
-                <LayoutDashboard className="h-4 w-4" /> Go to Dashboard
-              </Button>
+            <div className="mt-6">
               <Button
+                type="button"
                 variant="outline"
-                onClick={handleDownload}
-                disabled={downloading}
+                onClick={() => setStep(3)}
               >
-                {downloading ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                {downloading ? "Preparing…" : "Download Application"}
+                <ChevronLeft className="h-4 w-4" />
+                Back to Review
               </Button>
             </div>
-
-            <p className="mt-4 flex items-center gap-1.5 text-xs text-ink-400">
-              <ShieldCheck className="h-3.5 w-3.5" /> Allocation is subject to
-              verification, payment and approval.
-            </p>
           </div>
         )}
       </div>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      {label && (
+        <label className="mb-1.5 block text-sm font-medium text-navy-950">
+          {label}
+        </label>
+      )}
+
+      {children}
+
+      {error && (
+        <p className="mt-1.5 text-xs text-status-sold">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
 
 function StepIndicator({ step }: { step: Step }) {
-  const steps = ["Applicant Info", "Property Info", "Review", "Payment"];
+  const steps = [
+    "Applicant Info",
+    "Property Info",
+    "Review",
+    "Payment",
+  ];
+
   return (
     <div className="mt-8 flex items-center gap-2">
-      {steps.map((label, i) => {
-        const n = i + 1;
-        const active = n === step;
-        const done = n < step;
+      {steps.map((label, index) => {
+        const number = index + 1;
+        const active = number === step;
+        const done = number < step;
+
         return (
-          <div key={label} className="flex flex-1 items-center gap-2">
+          <div
+            key={label}
+            className="flex flex-1 items-center gap-2"
+          >
             <div
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                 done
@@ -896,14 +1144,24 @@ function StepIndicator({ step }: { step: Step }) {
                     : "border border-navy-800/20 text-ink-300"
               }`}
             >
-              {done ? <CheckCircle2 className="h-4 w-4" /> : n}
+              {done ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                number
+              )}
             </div>
+
             <span
-              className={`hidden text-xs font-medium sm:block ${active || done ? "text-navy-950" : "text-ink-300"}`}
+              className={`hidden text-xs font-medium sm:block ${
+                active || done
+                  ? "text-navy-950"
+                  : "text-ink-300"
+              }`}
             >
               {label}
             </span>
-            {i < steps.length - 1 && (
+
+            {index < steps.length - 1 && (
               <span className="h-px flex-1 bg-navy-800/10" />
             )}
           </div>
@@ -922,17 +1180,30 @@ function Section({
 }) {
   return (
     <div className="rounded-2xl border border-navy-800/10 bg-white p-6 sm:p-8">
-      <h2 className="text-base font-bold text-navy-950">{title}</h2>
+      <h2 className="text-base font-bold text-navy-950">
+        {title}
+      </h2>
+
       <div className="mt-5">{children}</div>
     </div>
   );
 }
 
-function ReviewRow({ label, value }: { label: string; value: string }) {
+function ReviewRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-navy-800/5 pb-3 last:border-0 last:pb-0">
       <dt className="text-ink-500">{label}</dt>
-      <dd className="text-right font-medium text-navy-950">{value}</dd>
+
+      <dd className="text-right font-medium text-navy-950">
+        {value || "—"}
+      </dd>
     </div>
   );
 }
+
