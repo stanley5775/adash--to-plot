@@ -15,7 +15,7 @@ export default async function DashboardInspectionsPage() {
 
   return (
     <div className="space-y-8">
-      <DashboardHeader customer={customer} title="Inspections" subtitle="Manage your upcoming and past property inspections." />
+      <DashboardHeader title="Inspections" subtitle="Manage your upcoming and past property inspections." />
       <InspectionsList estateNames={estateNames} initial={inspections} />
     </div>
   );

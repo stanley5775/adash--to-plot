@@ -4,15 +4,9 @@ export interface EstateFeature {
   label: string;
 }
 
-export interface Landmark {
-  name: string;
-  distance: string;
-}
-
 export interface Estate {
-  estateNameId: string;
+  id: string;
   slug: string;
-  city: string;
   name: string;
   location: string;
   state: string;
@@ -27,7 +21,6 @@ export interface Estate {
   coverImage: string;
   gallery: string[];
   features: string[];
-  nearbyLandmarks: Landmark[];
   propertyIds: string[];
   paymentPlanMonths: number[];
 }
