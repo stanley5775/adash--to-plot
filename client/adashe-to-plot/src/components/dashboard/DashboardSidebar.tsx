@@ -19,8 +19,7 @@ const items = [
   { href: "/dashboard/properties", label: "My Properties", icon: Home },
   { href: "/dashboard/payments", label: "Payments", icon: Wallet },
   { href: "/dashboard/applications", label: "Applications", icon: FileText },
-  { href: "/dashboard/inspections", label: "Inspections", icon: CalendarCheck },
-  { href: "/dashboard/documents", label: "Documents", icon: FolderOpen },
+
   { href: "/dashboard/ati-plus", label: "ATI Plus", icon: Star },
 ];
 
@@ -38,20 +37,15 @@ export function DashboardSidebar() {
               key={item.href}
               href={item.href}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors lg:shrink ${
-                active ? "bg-navy-950 text-white" : "text-ink-700 hover:bg-navy-100"
-              }`}
-            >
+                active
+                  ? "bg-navy-950 text-white"
+                  : "text-ink-700 hover:bg-navy-100"
+              }`}>
               <Icon className="h-4 w-4" />
               {item.label}
             </Link>
           );
         })}
-        <span className="mt-2 hidden items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-300 lg:flex">
-          <User className="h-4 w-4" /> Profile
-        </span>
-        <span className="hidden items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-300 lg:flex">
-          <Settings className="h-4 w-4" /> Settings
-        </span>
       </nav>
     </aside>
   );

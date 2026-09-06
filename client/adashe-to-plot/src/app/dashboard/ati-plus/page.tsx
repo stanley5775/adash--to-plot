@@ -1,11 +1,19 @@
-import { redirect } from "next/navigation";
-import { Star, Clock, Gift, HeartHandshake, ShieldCheck, Crown, Wallet, Percent } from "lucide-react";
-import { getCurrentCustomer } from "@/services/customer.service";
-import { getAtiMemberByName } from "@/services/ati.service";
+"use client";
+
+import {
+  Star,
+  Clock,
+  Gift,
+  HeartHandshake,
+  ShieldCheck,
+  Crown,
+  Wallet,
+  Percent,
+} from "lucide-react";
+
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { JoinAtiPlusButton } from "@/components/ati/JoinAtiPlusButton";
 import { Badge, statusToTone } from "@/components/ui/Badge";
-import { formatDate, formatNaira } from "@/lib/payment";
 
 const benefits = [
   { icon: Percent, title: "5% Off Every Payment Plan" },
@@ -17,71 +25,130 @@ const benefits = [
   { icon: Crown, title: "Member-Only Investments" },
 ];
 
-export default async function DashboardAtiPlusPage() {
-  const customer = await getCurrentCustomer();
-  
-  if (!customer) {
-    redirect("/login?redirect=/dashboard/ati-plus");
-  }
-
-  const member = customer.isAtiPlusMember ? await getAtiMemberByName(customer.name) : undefined;
+export default function DashboardAtiPlusPage() {
+  const isAtiPlusMember = false;
 
   return (
     <div className="space-y-8">
-      <DashboardHeader customer={customer} title="ATI Plus" subtitle="Your membership status and benefits." />
+      <DashboardHeader
+        title="ATI Plus"
+        subtitle="Your membership status and benefits."
+      />
 
-      {customer.isAtiPlusMember && member ? (
-        <>
-          <div className="rounded-2xl border border-gold-400 bg-gold-50 p-6 sm:p-8">
-            <div className="flex items-center gap-2 text-gold-700">
-              <Star className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wide">Active ATI Plus Member</span>
-            </div>
-            <p className="mt-3 text-sm text-ink-700">Member since {formatDate(member.memberSince)} — {member.membershipLevel} tier</p>
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {benefits.map((b) => (
-                <div key={b.title} className="flex items-center gap-3 rounded-xl bg-white p-4">
-                  <b.icon className="h-5 w-5 text-gold-600" />
-                  <span className="text-sm font-medium text-navy-950">{b.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Membership Status */}
+      <div className="rounded-2xl border border-gold-400 bg-gold-50 p-6 sm:p-8">
+        <div className="flex items-center gap-2 text-gold-700">
+          <Star className="h-5 w-5" />
 
-          <div className="rounded-2xl border border-navy-800/10 bg-white p-6">
-            <h3 className="flex items-center gap-2 text-base font-bold text-navy-950">
-              <Wallet className="h-4 w-4 text-gold-600" /> Annual Subscription
-            </h3>
-            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">Annual Fee</p>
-                <p className="font-bold text-navy-950">{formatNaira(member.annualFee)}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">Status</p>
-                <Badge tone={statusToTone(member.subscriptionStatus)}>{member.subscriptionStatus}</Badge>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">Renews On</p>
-                <p className="font-bold text-navy-950">{formatDate(member.renewalDate)}</p>
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-ink-500">
-              ATI Plus membership is renewed automatically each year for a flat ₦{member.annualFee.toLocaleString("en-NG")} subscription fee.
-            </p>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-navy-800/10 bg-white p-10 text-center">
-          <Crown className="h-10 w-10 text-gold-500" />
-          <h3 className="text-lg font-bold text-navy-950">You&apos;re not an ATI Plus member yet</h3>
-          <p className="max-w-sm text-sm text-ink-500">
-            Join ATI Plus for early access to new releases, priority inspections and dedicated support — for a flat
-            ₦15,000 annual subscription.
-          </p>
-          <JoinAtiPlusButton />
+          <span className="text-sm font-bold uppercase tracking-wide">
+            ATI Plus Membership
+          </span>
         </div>
-      )}
+
+        {isAtiPlusMember ? (
+          <>
+            <div className="mt-3 flex items-center gap-3">
+              <h3 className="text-xl font-bold text-navy-950">
+                Yes, you are an ATI Plus Member
+              </h3>
+
+              <Badge tone={statusToTone("Active")}>Active</Badge>
+            </div>
+
+            <p className="mt-2 text-sm text-ink-600">
+              You have access to all ATI Plus membership benefits.
+            </p>
+
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {benefits.map((benefit) => {
+                const Icon = benefit.icon;
+
+                return (
+                  <div
+                    key={benefit.title}
+                    className="flex items-center gap-3 rounded-xl bg-white p-4">
+                    <Icon className="h-5 w-5 text-gold-600" />
+
+                    <span className="text-sm font-medium text-navy-950">
+                      {benefit.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="mt-3 text-xl font-bold text-navy-950">
+              You are not an ATI Plus Member
+            </h3>
+
+            <p className="mt-2 max-w-md text-sm text-ink-600">
+              Join ATI Plus to get early access, priority inspections, exclusive
+              offers and dedicated support.
+            </p>
+
+            <div className="mt-5">
+              <JoinAtiPlusButton />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Payment History */}
+      <div>
+        <h3 className="text-base font-bold text-navy-950">
+          ATI Plus Payment History
+        </h3>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-navy-800/10 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-navy-800/10 bg-navy-50">
+                  <th className="px-5 py-3 font-semibold text-ink-700">Date</th>
+
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Description
+                  </th>
+
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Amount
+                  </th>
+
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Status
+                  </th>
+
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Reference
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td className="px-5 py-4 text-ink-700">Sep 01, 2026</td>
+
+                  <td className="px-5 py-4 text-ink-700">
+                    ATI Plus Subscription
+                  </td>
+
+                  <td className="px-5 py-4 font-semibold text-navy-950">
+                    ₦20,000
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <Badge tone={statusToTone("Paid")}>Paid</Badge>
+                  </td>
+
+                  <td className="px-5 py-4 text-ink-500">ATI-PAY-001</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

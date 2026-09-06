@@ -1,92 +1,92 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import {useRouter} from "next/navigation";
-import { FileText, Plus, Eye } from "lucide-react";
-import { getCurrentCustomer } from "@/services/customer.service";
-import { getUserApplications } from "@/services/application.service";
-import { estates } from "@/data/estates";
-import { properties } from "@/data/properties";
+import { Eye } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingState } from "@/components/ui/LoadingState";
-import { applicationStatusTone, formatApplicationStatus } from "@/lib/application-status";
-import { formatDate } from "@/lib/payment";
-import type { Customer } from "@/types/customer";
-import type { Application } from "@/types/application";
 
 export default function DashboardApplicationsPage() {
-  const router = useRouter();
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [applications, setApplications] = useState<Application[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const current = await getCurrentCustomer();
-      if (!current) {
-        router.replace("/login?redirect=/dashboard/applications");
-        return;
-      }
-      const mine = await getUserApplications(current.email);
-      if (!active) return;
-      setCustomer(current);
-      // Newly created applications (from the live /application flow) are
-      // stored client-side (see src/lib/storage.ts), so this page must run
-      // on the client to see them alongside the seeded demo applications.
-      setApplications(mine);
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  if (!customer || !applications) return <LoadingState label="Loading your applications" />;
-
   return (
     <div className="space-y-8">
-      <DashboardHeader customer={customer} title="Applications" subtitle="Every Land Application you've submitted, from payment to allocation." />
+      <DashboardHeader
+        title="Application"
+        subtitle="View your land application and payment history."
+      />
 
-      <Button href="/application"><Plus className="h-4 w-4" /> Start a New Land Application</Button>
+      {/* View Application */}
+      <div>
+        <h3 className="text-base font-bold text-navy-950">View Application</h3>
 
-      {applications.length === 0 ? (
-        <EmptyState
-          title="No applications yet"
-          description="Once you start a Land Application, its progress will appear here."
-          icon={<FileText className="h-8 w-8" />}
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {applications.map((application) => {
-            const estate = estates.find((e) => e.id === application.property.estateId);
-            const property = properties.find((p) => p.id === application.property.propertyId);
-            return (
-              <Link
-                key={application.id}
-                href={`/dashboard/applications/${application.id}`}
-                className="flex flex-col gap-3 rounded-2xl border border-navy-800/10 bg-white p-6 transition-shadow hover:shadow-lg sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
-                    {application.applicationNumber ?? "Reference pending"}
-                  </p>
-                  <p className="mt-1 text-lg font-bold text-navy-950">{property?.title ?? "—"}</p>
-                  <p className="mt-0.5 text-sm text-ink-500">{estate?.name} — {formatDate(application.dateStarted)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge tone={applicationStatusTone(application.status)}>{formatApplicationStatus(application.status)}</Badge>
-                  <span className="flex items-center gap-1 text-xs font-semibold text-navy-700">
-                    <Eye className="h-3.5 w-3.5" /> View
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
+        <div className="mt-4 rounded-2xl border border-navy-800/10 bg-white p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
+                APP-001234
+              </p>
+
+              <h4 className="mt-1 text-lg font-bold text-navy-950">
+                Premium Residential Plot
+              </h4>
+
+              <p className="mt-1 text-sm text-ink-500">
+                Adashè Estate — Plot 24
+              </p>
+
+              <p className="mt-1 text-sm text-ink-500">
+                Application Date: September 01, 2026
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="flex w-fit items-center gap-2 rounded-xl border border-navy-800/10 px-4 py-2.5 text-sm font-semibold text-navy-700 transition-colors hover:bg-navy-50">
+              <Eye className="h-4 w-4" />
+              View Application
+            </button>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Application Payment History */}
+      <div>
+        <h3 className="text-base font-bold text-navy-950">
+          Application Payment History
+        </h3>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-navy-800/10 bg-white">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-navy-800/10 bg-navy-50">
+                  <th className="px-5 py-3 font-semibold text-ink-700">Date</th>
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Description
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Amount
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Status
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-ink-700">
+                    Reference
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr className="border-b border-navy-800/5">
+                  <td className="px-5 py-3.5 text-ink-700">Sep 01, 2026</td>
+                  <td className="px-5 py-3.5 text-ink-700">Initial Payment</td>
+                  <td className="px-5 py-3.5 font-semibold text-navy-950">
+                    ₦2,000,000
+                  </td>
+                  <td className="px-5 py-3.5 text-green-600">Paid</td>
+                  <td className="px-5 py-3.5 text-ink-500">PAY-001234</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

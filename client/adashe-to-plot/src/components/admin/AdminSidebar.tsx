@@ -20,7 +20,7 @@ const items = [
   { href: "/admin/estates", label: "Estates", icon: Building2 },
   { href: "/admin/properties", label: "Properties", icon: Home },
   { href: "/admin/payment-plans", label: "Payment Plans", icon: CreditCard },
-  { href: "/admin/customers", label: "Customers", icon: Users },
+  { href: "/admin/customers", label: "Users", icon: Users },
   { href: "/admin/ati-plus", label: "ATI Plus Members", icon: Star },
   { href: "/admin/applications", label: "Applications", icon: FileText },
   { href: "/admin/sales", label: "Sales", icon: BarChart3 },
@@ -40,9 +40,10 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors lg:shrink ${
-                active ? "bg-white text-navy-950" : "text-navy-100/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
+                active
+                  ? "bg-white text-navy-950"
+                  : "text-navy-100/70 hover:bg-white/10 hover:text-white"
+              }`}>
               <Icon className="h-4 w-4" />
               {item.label}
             </Link>
