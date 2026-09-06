@@ -1,9 +1,11 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+
 import { useForm } from "react-hook-form";
+
 import {
   CheckCircle2,
   Eye,
@@ -15,6 +17,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
+
 import { resetPassword } from "@/services/password-reset.service";
 
 type ResetPasswordFormData = {
@@ -23,8 +26,8 @@ type ResetPasswordFormData = {
 };
 
 function ResetPasswordForm() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token") ?? "";
+  const [resetToken, setResetToken] = useState("");
+  const [checkingToken, setCheckingToken] = useState(true);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -40,17 +43,28 @@ function ResetPasswordForm() {
 
   const password = watch("password", "");
 
+  useEffect(() => {
+    const token = sessionStorage.getItem("adashe_reset_token");
+
+    if (token) {
+      setResetToken(token);
+    }
+
+    setCheckingToken(false);
+  }, []);
+
   async function onSubmit(data: ResetPasswordFormData) {
-    if (!token) {
+    if (!resetToken) {
       setError("root", {
         type: "token",
-        message: "This password reset link is invalid or incomplete.",
+        message:
+          "Your password reset session is invalid or has expired. Please request a new OTP.",
       });
       return;
     }
 
     const result = await resetPassword({
-      token,
+      resetToken,
       password: data.password,
     });
 
@@ -63,28 +77,40 @@ function ResetPasswordForm() {
       return;
     }
 
+    sessionStorage.removeItem("adashe_reset_token");
+    sessionStorage.removeItem("adashe_reset_email");
+
     setSuccess(true);
   }
 
-  if (!token) {
+  if (checkingToken) {
+    return (
+      <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
+        <LoaderCircle className="h-6 w-6 animate-spin text-navy-800" />
+      </div>
+    );
+  }
+
+  if (!resetToken) {
     return (
       <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
         <div className="w-full max-w-md rounded-3xl border border-navy-800/10 bg-white p-8 text-center sm:p-10">
           <KeyRound className="mx-auto h-10 w-10 text-status-sold" />
 
           <h1 className="mt-5 text-2xl font-bold text-navy-950">
-            Invalid reset link
+            Reset session expired
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-ink-500">
-            This password reset link is missing a valid reset token.
+            Your password reset session is missing or has expired. Please
+            request a new verification code.
           </p>
 
           <Link
             href="/forgot-password"
             className="mt-6 inline-flex font-semibold text-navy-800 hover:text-gold-600"
           >
-            Request a new reset link
+            Request a new OTP
           </Link>
         </div>
       </div>

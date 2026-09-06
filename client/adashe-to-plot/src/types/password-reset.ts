@@ -8,8 +8,20 @@ export interface ForgotPasswordResult {
   error?: string;
 }
 
+export interface VerifyResetOtpInput {
+  email: string;
+  otp: string;
+}
+
+export interface VerifyResetOtpResult {
+  success: boolean;
+  message?: string;
+  resetToken?: string;
+  error?: string;
+}
+
 export interface ResetPasswordInput {
-  token: string;
+  resetToken: string;
   password: string;
 }
 
