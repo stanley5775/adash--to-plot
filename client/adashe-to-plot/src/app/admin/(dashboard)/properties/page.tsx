@@ -139,9 +139,9 @@ export default function AdminEstatePage() {
             <p className="mt-1 text-sm text-ink-500">Manage all estates.</p>
           </div>
 
-          <Button href="/admin/estates/new">
+          <Button href="/admin/properties/new">
             <Plus className="h-4 w-4" />
-            Add Estate
+            Add properties
           </Button>
         </div>
 
