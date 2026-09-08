@@ -63,7 +63,6 @@ export function Property() {
     formData.append("totalPlots", data.totalPlots);
     formData.append("features", data.features);
     formData.append("nearbyLandmarks", data.nearbyLandmarks);
-    formData.append("status", data.status);
 
     // Main image
     if (data.mainImage?.[0]) {
@@ -209,23 +208,6 @@ export function Property() {
       </div>
 
       {/* Status */}
-      <div>
-        <Select
-          label="Status"
-          id="status"
-          options={[
-            {
-              label: "Active",
-              value: "ACTIVE",
-            },
-            {
-              label: "Inactive",
-              value: "INACTIVE",
-            },
-          ]}
-          {...register("status")}
-        />
-      </div>
 
       {/* Description */}
       <div className="sm:col-span-2">
@@ -289,7 +271,7 @@ export function Property() {
         <p className="mt-1 text-xs text-ink-500">Main property image.</p>
       </div>
 
-      {/* ================= GALLERY ================= */}
+      {/*GALLERY */}
       <div className="sm:col-span-2">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-navy-950">

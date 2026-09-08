@@ -30,15 +30,20 @@ function EstatesContent() {
   const filtered = useMemo(() => {
     return estates.filter((estate) => {
       if (location && estate.location !== location) return false;
-      if (query && !estate.name.toLowerCase().includes(query.toLowerCase())) return false;
-      if (availability === "available" && estate.availablePlots === 0) return false;
+      if (query && !estate.name.toLowerCase().includes(query.toLowerCase()))
+        return false;
+      if (availability === "available" && estate.availablePlots === 0)
+        return false;
       if (type) {
-        const hasType = properties.some((p) => p.estateId === estate.id && p.propertyType === type);
+        const hasType = properties.some(
+          (p) => p.estateId === estate.id && p.propertyType === type,
+        );
         if (!hasType) return false;
       }
       if (price) {
         const [min, max] = price.split("-").map(Number);
-        if (estate.startingPrice < min || estate.startingPrice > max) return false;
+        if (estate.startingPrice < min || estate.startingPrice > max)
+          return false;
       }
       return true;
     });
@@ -48,10 +53,12 @@ function EstatesContent() {
     <div className="container-page py-16 sm:py-20">
       <div className="max-w-2xl">
         <span className="gold-rule mb-4 block" />
-        <h1 className="text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">Explore Estates</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">
+          Explore Estates
+        </h1>
         <p className="mt-3 text-ink-500">
-          Browse every Adashè-to-Plot estate currently open for investment, and filter by location, property type,
-          price and availability.
+          Browse every Adashè-to-Plot estate currently open for investment, and
+          filter by location, property type, price and availability.
         </p>
       </div>
 
@@ -70,34 +77,25 @@ function EstatesContent() {
             id="loc-filter"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            options={[{ label: "Locations", value: "" }, ...locations.map((l) => ({ label: l, value: l }))]}
+            options={[
+              { label: "Locations", value: "" },
+              ...locations.map((l) => ({ label: l, value: l })),
+            ]}
           />
-          <Select
-            id="type-filter"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            options={[{ label: "Property type", value: "" }, ...types.map((t) => ({ label: t, value: t }))]}
-          />
+
           <Select
             id="price-filter"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             options={priceBands}
           />
-          <Select
-            id="availability-filter"
-            value={availability}
-            onChange={(e) => setAvailability(e.target.value)}
-            options={[
-              { label: "Availability", value: "" },
-              { label: "Has available plots", value: "available" },
-            ]}
-          />
         </div>
       </div>
 
       <div className="mt-10">
-        <p className="mb-4 text-sm text-ink-500">{filtered.length} estate{filtered.length === 1 ? "" : "s"} found</p>
+        <p className="mb-4 text-sm text-ink-500">
+          {filtered.length} estate{filtered.length === 1 ? "" : "s"} found
+        </p>
         <EstateGrid estates={filtered} />
       </div>
     </div>
