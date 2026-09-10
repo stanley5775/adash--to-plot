@@ -11,8 +11,8 @@ export const envSchema = z.object({
   FRONTEND_URL: z.string(),
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
- 
 
+  PAYSTACK_SECRET_KEY: z.string(),
   SELAR_API_KEY: z.string().optional(),
   SELAR_WEBHOOK_SECRET: z.string().optional(),
 

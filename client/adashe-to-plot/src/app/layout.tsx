@@ -3,7 +3,8 @@ import { Inter } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
-
+import { TanstackQueryProvider } from "../../context/TanstackQueryProvider";
+import toast, { Toaster } from "react-hot-toast";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -16,12 +17,21 @@ export const metadata: Metadata = {
     "Discover verified residential plots and premium property investments across Abuja. Flexible payment plans, secure documentation, and dedicated support from Adashè-to-Plot — pay small small, own a property.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={inter.variable}>
       <body className="flex min-h-screen flex-col antialiased">
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          <TanstackQueryProvider>
+            <Toaster />
+            {children}
+          </TanstackQueryProvider>
+        </main>
         <Footer />
       </body>
     </html>

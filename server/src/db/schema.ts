@@ -48,20 +48,18 @@ export const installmentStatusEnum = pgEnum("installment_status", [
   "OVERDUE",
 ]);
 
-export const paymentTypeEnum = pgEnum("payment_type", [
-  "PROPERTY_PAYMENT",
-  "LAND_APPLICATION_FEE",
-]);
-
-export const paymentProviderEnum = pgEnum("payment_provider", ["FLUTTERWAVE"]);
+export const paymentProviderEnum = pgEnum("payment_provider", ["PAYSTACK"]);
 
 export const paymentStatusEnum = pgEnum("payment_status", [
   "PENDING",
   "SUCCESSFUL",
   "FAILED",
-  "REFUNDED",
 ]);
-
+export const paymentTypeEnum = pgEnum("payment_type", [
+  "LAND_APPLICATION_FEE",
+  "PROPERTY_INSTALLMENT",
+  "ATI_MEMBERSHIP",
+]);
 export const applicationStageEnum = pgEnum("application_stage", [
   "APPLICATION_STARTED",
   "DOCUMENTS_SUBMITTED",
@@ -116,8 +114,8 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "GENERAL",
 ]);
 
-//    USERS
-
+// USERS
+// USERS
 export const users = pgTable(
   "users",
   {
@@ -128,6 +126,9 @@ export const users = pgTable(
     email: text("email").notNull().unique(),
 
     phone_number: text("phone").notNull(),
+
+    // ATI Membership
+    ATI_membership: boolean("ATI_membership").notNull().default(false),
 
     Password: text("password_hash").notNull(),
 
@@ -149,7 +150,6 @@ export const users = pgTable(
     index("users_active_idx").on(table.isActive),
   ],
 );
-
 export const passwordResetOtps = pgTable(
   "password_reset_otps",
   {
@@ -184,9 +184,10 @@ export const estateNames = pgTable("estate_names", {
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-//    ESTATE DETAILS
-export const estates = pgTable(
-  "estates",
+
+//  ESTATE DETAILS
+export const properties = pgTable(
+  "properties",
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
@@ -215,7 +216,62 @@ export const estates = pgTable(
 
     nearbyLandmarks: text("nearby_landmarks").array(),
 
-    status: estateStatusEnum("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("estates_city_idx").on(table.city),
+    index("estates_state_idx").on(table.state),
+    index("estates_estate_id_idx").on(table.estateId),
+  ],
+);
+
+export const PropertyPaymentPlan = pgTable(
+  "property_payment_plan",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, {
+        onDelete: "cascade",
+      }),
+
+    estateId: uuid("estate_id")
+      .notNull()
+      .references(() => estateNames.id, {
+        onDelete: "restrict",
+      }),
+
+    name: text("name").notNull(),
+
+    durationMonths: integer("duration_months"),
+
+    totalAmount: numeric("total_amount", {
+      precision: 12,
+      scale: 2,
+    }).notNull(),
+
+    monthlyAmount: numeric("monthly_amount", {
+      precision: 12,
+      scale: 2,
+    }),
+
+    interestRate: numeric("interest_rate", {
+      precision: 5,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
 
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -230,20 +286,18 @@ export const estates = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("estates_status_idx").on(table.status),
-    index("estates_city_idx").on(table.city),
-    index("estates_state_idx").on(table.state),
-    index("estates_estate_id_idx").on(table.estateId),
+    index("property_payment_plan_property_idx").on(table.propertyId),
+    index("property_payment_plan_estate_idx").on(table.estateId),
   ],
 );
-export const estateImages = pgTable(
-  "estate_images",
+export const propertiesImage = pgTable(
+  "properties_images",
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
     estateId: uuid("estate_id")
       .notNull()
-      .references(() => estates.id, {
+      .references(() => properties.id, {
         onDelete: "cascade",
       }),
 
@@ -289,495 +343,90 @@ export const estateImages = pgTable(
 );
 
 //    PROPERTIES
-export const properties = pgTable(
-  "properties",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    estateId: uuid("estate_id")
-      .notNull()
-      .references(() => estateNames.id, {
-        onDelete: "restrict",
-      }),
-
-    name: text("name").notNull(),
-
-    description: text("description"),
-
-    sizeSqm: integer("size_sqm").notNull(),
-
-    price: integer("price").notNull(),
-
-    status: propertyStatusEnum("status").notNull().default("AVAILABLE"),
-
-    image: text("image"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("properties_estate_id_idx").on(table.estateId),
-    index("properties_status_idx").on(table.status),
-    index("properties_price_idx").on(table.price),
-  ],
-);
-
-//    PAYMENT PLANS
-
-export const paymentPlans = pgTable(
-  "payment_plans",
-  {
-    id: uuid("id").defaultRandom().notNull().unique(),
-
-    propertyId: uuid("property_id")
-      .notNull()
-      .references(() => properties.id, {
-        onDelete: "cascade",
-      }),
-
-    durationMonths: integer("duration_months").notNull(),
-
-    /**
-     * Stored as whole percentage.
-     *
-     * 0  = 0%
-     * 9  = 9%
-     * 11 = 11%
-     */
-    interestRate: integer("interest_rate").notNull(),
-
-    basePrice: integer("base_price").notNull(),
-
-    interestAmount: integer("interest_amount").notNull(),
-
-    totalAmount: integer("total_amount").notNull(),
-
-    depositAmount: integer("deposit_amount").notNull(),
-
-    monthlyAmount: integer("monthly_amount").notNull(),
-
-    status: paymentPlanStatusEnum("status").notNull().default("ACTIVE"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("payment_plans_property_idx").on(table.propertyId),
-
-    index("payment_plans_duration_idx").on(table.durationMonths),
-
-    index("payment_plans_status_idx").on(table.status),
-
-    unique("payment_plans_property_duration_unique").on(
-      table.propertyId,
-      table.durationMonths,
-    ),
-  ],
-);
-
-//    PURCHASES
-
-export const purchases = pgTable(
-  "purchases",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    customerId: uuid("customer_id")
-      .notNull()
-      .references(() => users.id, {
-        onDelete: "restrict",
-      }),
-
-    propertyId: uuid("property_id")
-      .notNull()
-      .references(() => properties.id, {
-        onDelete: "restrict",
-      }),
-
-    estateId: uuid("estate_id")
-      .notNull()
-      .references(() => estateNames.id, {
-        onDelete: "restrict",
-      }),
-
-    paymentPlanId: uuid("payment_plan_id")
-      .notNull()
-      .references(() => paymentPlans.id, {
-        onDelete: "restrict",
-      }),
-
-    propertyPrice: integer("property_price").notNull(),
-
-    interestAmount: integer("interest_amount").notNull(),
-
-    totalAmount: integer("total_amount").notNull(),
-
-    amountPaid: integer("amount_paid").notNull().default(0),
-
-    outstandingAmount: integer("outstanding_amount").notNull(),
-
-    status: purchaseStatusEnum("status").notNull().default("PENDING"),
-
-    startDate: date("start_date"),
-
-    nextPaymentDate: date("next_payment_date"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("purchases_customer_idx").on(table.customerId),
-
-    index("purchases_property_idx").on(table.propertyId),
-
-    index("purchases_estate_idx").on(table.estateId),
-
-    index("purchases_payment_plan_idx").on(table.paymentPlanId),
-
-    index("purchases_status_idx").on(table.status),
-
-    index("purchases_next_payment_idx").on(table.nextPaymentDate),
-  ],
-);
-
-//    PAYMENTS
-
-export const payments = pgTable(
-  "payments",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    customerId: uuid("customer_id")
-      .notNull()
-      .references(() => users.id, {
-        onDelete: "restrict",
-      }),
-
-    purchaseId: uuid("purchase_id").references(() => purchases.id, {
-      onDelete: "restrict",
-    }),
-
-    type: paymentTypeEnum("type").notNull(),
-
-    provider: paymentProviderEnum("provider").notNull().default("FLUTTERWAVE"),
-
-    providerTransactionId: text("provider_transaction_id"),
-
-    reference: text("reference").notNull().unique(),
-
-    amount: integer("amount").notNull(),
-
-    currency: text("currency").notNull().default("NGN"),
-
-    status: paymentStatusEnum("status").notNull().default("PENDING"),
-
-    metadata: jsonb("metadata"),
-
-    paidAt: timestamp("paid_at", {
-      withTimezone: true,
-    }),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("payments_customer_idx").on(table.customerId),
-
-    index("payments_purchase_idx").on(table.purchaseId),
-
-    index("payments_status_idx").on(table.status),
-
-    index("payments_provider_transaction_idx").on(table.providerTransactionId),
-  ],
-);
-
-//    PAYMENT SCHEDULES
-
-export const paymentSchedules = pgTable(
-  "payment_schedules",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    purchaseId: uuid("purchase_id")
-      .notNull()
-      .references(() => purchases.id, {
-        onDelete: "cascade",
-      }),
-
-    installmentNumber: integer("installment_number").notNull(),
-
-    amount: integer("amount").notNull(),
-
-    dueDate: date("due_date").notNull(),
-
-    status: installmentStatusEnum("status").notNull().default("PENDING"),
-
-    paidAt: timestamp("paid_at", {
-      withTimezone: true,
-    }),
-
-    paymentId: uuid("payment_id").references(() => payments.id, {
-      onDelete: "set null",
-    }),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("payment_schedules_purchase_idx").on(table.purchaseId),
-
-    index("payment_schedules_due_date_idx").on(table.dueDate),
-
-    index("payment_schedules_status_idx").on(table.status),
-
-    unique("payment_schedules_installment_unique").on(
-      table.purchaseId,
-      table.installmentNumber,
-    ),
-  ],
-);
-
-//    APPLICATIONS
-
-export const applications = pgTable(
+export const applicationStatusEnum = pgEnum("application_status", [
+  "PENDING_PAYMENT",
+  "PAID",
+  "CANCELLED",
+]);
+
+export const applicationSchema = pgTable(
   "applications",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-
-    customerId: uuid("customer_id")
+    // Applicant information
+    surname: text("surname").notNull(),
+    firstName: text("first_name").notNull(),
+    middleName: text("middle_name"),
+    userId: uuid("user_id")
       .notNull()
       .references(() => users.id, {
         onDelete: "restrict",
       }),
+    sex: text("sex").notNull(),
+    residentialAddress: text("residential_address").notNull(),
+    dateOfBirth: text("date_of_birth").notNull(),
+    nationality: text("nationality").notNull(),
+    stateOfOrigin: text("state_of_origin").notNull(),
 
-    propertyId: uuid("property_id")
-      .notNull()
-      .references(() => properties.id, {
-        onDelete: "restrict",
-      }),
-
-    purchaseId: uuid("purchase_id").references(() => purchases.id, {
-      onDelete: "set null",
-    }),
-
-    fullName: text("full_name").notNull(),
-
+    phone1: text("phone1").notNull(),
+    phone2: text("phone2"),
     email: text("email").notNull(),
-
-    phone: text("phone").notNull(),
-
-    dateOfBirth: date("date_of_birth").notNull(),
-
-    address: text("address").notNull(),
 
     occupation: text("occupation").notNull(),
+    officeAddress: text("office_address"),
 
-    nationality: text("nationality").notNull(),
-
-    nextOfKin: text("next_of_kin").notNull(),
-
+    // Next of kin
+    nextOfKinName: text("next_of_kin_name").notNull(),
+    nextOfKinRelationship: text("next_of_kin_relationship").notNull(),
     nextOfKinPhone: text("next_of_kin_phone").notNull(),
+    nextOfKinAddress: text("next_of_kin_address").notNull(),
 
-    identificationType: text("identification_type").notNull(),
+    // Corporate information
+    isCorporate: boolean("is_corporate").notNull().default(false),
+    businessName: text("business_name"),
+    rcNumber: text("rc_number"),
+    companyAddress: text("company_address"),
+    natureOfBusiness: text("nature_of_business"),
+    companyPhone: text("company_phone"),
+    companyEmail: text("company_email"),
 
-    identificationNumber: text("identification_number").notNull(),
+    // Referral
+    referralSource: text("referral_source"),
+    referralOther: text("referral_other"),
 
-    stage: applicationStageEnum("stage")
+    // Property
+    estate: text("estate").notNull(),
+
+    plotSize: text("plot_size").notNull(),
+    paymentOption: text("payment_option").notNull(),
+    acquisitionPurpose: text("acquisition_purpose").notNull(),
+
+    // Application/payment status
+    status: applicationStatusEnum("status")
       .notNull()
-      .default("APPLICATION_STARTED"),
+      .default("PENDING_PAYMENT"),
 
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })
       .notNull()
       .defaultNow(),
-
+    isApplication: boolean("isApplication"),
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
     })
       .notNull()
       .defaultNow(),
   },
+
   (table) => [
-    index("applications_customer_idx").on(table.customerId),
-
-    index("applications_property_idx").on(table.propertyId),
-
-    index("applications_purchase_idx").on(table.purchaseId),
-
-    index("applications_stage_idx").on(table.stage),
+    index("applications_email_idx").on(table.email),
+    index("applications_status_idx").on(table.status),
+    index("applications_estate_idx").on(table.estate),
   ],
 );
 
-//    DOCUMENTS
-
-export const documents = pgTable(
-  "documents",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    customerId: uuid("customer_id")
-      .notNull()
-      .references(() => users.id, {
-        onDelete: "restrict",
-      }),
-
-    applicationId: uuid("application_id").references(() => applications.id, {
-      onDelete: "cascade",
-    }),
-
-    purchaseId: uuid("purchase_id").references(() => purchases.id, {
-      onDelete: "set null",
-    }),
-
-    type: documentTypeEnum("type").notNull(),
-
-    fileName: text("file_name").notNull(),
-
-    storageKey: text("storage_key").notNull(),
-
-    fileUrl: text("file_url"),
-
-    mimeType: text("mime_type"),
-
-    status: documentStatusEnum("status").notNull().default("PENDING"),
-
-    rejectionReason: text("rejection_reason"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("documents_customer_idx").on(table.customerId),
-
-    index("documents_application_idx").on(table.applicationId),
-
-    index("documents_purchase_idx").on(table.purchaseId),
-
-    index("documents_status_idx").on(table.status),
-  ],
-);
-
-//    INSPECTIONS
-
-export const inspections = pgTable(
-  "inspections",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    customerId: uuid("customer_id")
-      .notNull()
-      .references(() => users.id, {
-        onDelete: "restrict",
-      }),
-
-    estateId: uuid("estate_id")
-      .notNull()
-      .references(() => estateNames.id, {
-        onDelete: "restrict",
-      }),
-
-    propertyId: uuid("property_id")
-      .notNull()
-      .references(() => properties.id, {
-        onDelete: "restrict",
-      }),
-
-    name: text("name").notNull(),
-
-    phone: text("phone").notNull(),
-
-    email: text("email").notNull(),
-
-    preferredDate: date("preferred_date").notNull(),
-
-    preferredTime: text("preferred_time").notNull(),
-
-    status: inspectionStatusEnum("status").notNull().default("PENDING"),
-
-    notes: text("notes"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("inspections_customer_idx").on(table.customerId),
-
-    index("inspections_estate_idx").on(table.estateId),
-
-    index("inspections_property_idx").on(table.propertyId),
-
-    index("inspections_status_idx").on(table.status),
-
-    index("inspections_date_idx").on(table.preferredDate),
-  ],
-);
-
-//    ATI MEMBERSHIPS
-
+//ATI MEMBERSHIPS
 export const atiMemberships = pgTable(
   "ati_memberships",
   {
@@ -789,25 +438,7 @@ export const atiMemberships = pgTable(
         onDelete: "restrict",
       }),
 
-    membershipNumber: text("membership_number").notNull().unique(),
-
     status: atiMembershipStatusEnum("status").notNull().default("PENDING"),
-
-    provider: text("provider").notNull().default("SELAR"),
-
-    providerCustomerId: text("provider_customer_id"),
-
-    providerProductId: text("provider_product_id"),
-
-    providerTransactionId: text("provider_transaction_id"),
-
-    email: text("email").notNull(),
-
-    phone: text("phone").notNull(),
-
-    amount: integer("amount").notNull(),
-
-    currency: text("currency").notNull().default("NGN"),
 
     startDate: timestamp("start_date", {
       withTimezone: true,
@@ -829,53 +460,42 @@ export const atiMemberships = pgTable(
       .notNull()
       .defaultNow(),
   },
+
   (table) => [
     index("ati_memberships_user_idx").on(table.userId),
-
     index("ati_memberships_status_idx").on(table.status),
-
-    index("ati_memberships_email_idx").on(table.email),
-
-    index("ati_memberships_phone_idx").on(table.phone),
-
-    index("ati_memberships_provider_customer_idx").on(table.providerCustomerId),
-
     index("ati_memberships_expiry_idx").on(table.expiryDate),
   ],
 );
 
-//    ATI TRANSACTIONS
-
-export const atiTransactions = pgTable(
-  "ati_transactions",
+export const atiMembershipPayments = pgTable(
+  "ati_membership_payments",
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
-    membershipId: uuid("membership_id").references(() => atiMemberships.id, {
-      onDelete: "set null",
-    }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => atiMemberships.id, {
+        onDelete: "restrict",
+      }),
 
-    userId: uuid("user_id").references(() => users.id, {
-      onDelete: "set null",
-    }),
-
-    provider: text("provider").notNull().default("SELAR"),
-
-    providerTransactionId: text("provider_transaction_id"),
-
-    providerCustomerId: text("provider_customer_id"),
-
-    providerProductId: text("provider_product_id"),
-
-    externalReference: text("external_reference").unique(),
-
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
     amount: integer("amount").notNull(),
 
+    ATI_membership: boolean("ATI_membership").notNull().default(false),
     currency: text("currency").notNull().default("NGN"),
+    provider: paymentProviderEnum("provider").notNull().default("PAYSTACK"),
+    status: paymentStatusEnum("status").notNull().default("PENDING"),
 
-    status: atiTransactionStatusEnum("status").notNull().default("PENDING"),
+    reference: text("reference").notNull().unique(),
 
-    rawMetadata: jsonb("raw_metadata"),
+    paidAt: timestamp("paid_at", {
+      withTimezone: true,
+    }),
 
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -889,20 +509,13 @@ export const atiTransactions = pgTable(
       .notNull()
       .defaultNow(),
   },
+
   (table) => [
-    index("ati_transactions_membership_idx").on(table.membershipId),
+    index("ati_membership_payments_membership_idx").on(table.membershipId),
 
-    index("ati_transactions_user_idx").on(table.userId),
+    index("ati_membership_payments_user_idx").on(table.userId),
 
-    index("ati_transactions_provider_transaction_idx").on(
-      table.providerTransactionId,
-    ),
-
-    index("ati_transactions_provider_customer_idx").on(
-      table.providerCustomerId,
-    ),
-
-    index("ati_transactions_status_idx").on(table.status),
+    index("ati_membership_payments_status_idx").on(table.status),
   ],
 );
 
@@ -942,41 +555,6 @@ export const notifications = pgTable(
   ],
 );
 
-//    AUDIT LOGS
-
-export const auditLogs = pgTable(
-  "audit_logs",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    actorId: uuid("actor_id").references(() => users.id, {
-      onDelete: "set null",
-    }),
-
-    action: text("action").notNull(),
-
-    entityType: text("entity_type").notNull(),
-
-    entityId: uuid("entity_id"),
-
-    description: text("description"),
-
-    metadata: jsonb("metadata"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("audit_logs_actor_idx").on(table.actorId),
-
-    index("audit_logs_entity_idx").on(table.entityType, table.entityId),
-
-    index("audit_logs_created_at_idx").on(table.createdAt),
-  ],
-);
 export const sessions = pgTable(
   "sessions",
   {
@@ -997,5 +575,279 @@ export const sessions = pgTable(
   (table) => [
     index("sessions_user_id_idx").on(table.userId),
     index("sessions_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
+export const paymentPlans = pgTable(
+  "payment_plans",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, {
+        onDelete: "cascade",
+      }),
+
+    // Outright, 6 Months, 12 Months, etc.
+    name: text("name").notNull(),
+
+    // 0 for outright
+    durationMonths: integer("duration_months").notNull(),
+
+    interestPercentage: numeric("interest_percentage", {
+      precision: 5,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+
+    // For outright = full payment
+    // For installment = monthly payment
+    paymentAmount: integer("payment_amount").notNull(),
+
+    totalPayable: integer("total_payable").notNull(),
+
+    status: paymentPlanStatusEnum("status").notNull().default("ACTIVE"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("payment_plans_property_idx").on(table.propertyId),
+    index("payment_plans_status_idx").on(table.status),
+
+    unique("payment_plan_property_name_unique").on(
+      table.propertyId,
+      table.name,
+    ),
+  ],
+);
+
+export const propertyPurchases = pgTable(
+  "property_purchases",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
+
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, {
+        onDelete: "restrict",
+      }),
+
+    paymentPlanId: uuid("payment_plan_id")
+      .notNull()
+      .references(() => paymentPlans.id, {
+        onDelete: "restrict",
+      }),
+
+    // Price at the time customer purchased
+    propertyPrice: integer("property_price").notNull(),
+
+    // Total amount customer agreed to pay
+    totalPayable: integer("total_payable").notNull(),
+
+    // How much has been successfully paid
+    amountPaid: integer("amount_paid").notNull().default(0),
+
+    // Remaining amount
+    balance: integer("balance").notNull(),
+
+    durationMonths: integer("duration_months").notNull(),
+
+    paymentAmount: integer("payment_amount"),
+
+    interestPercentage: numeric("interest_percentage", {
+      precision: 5,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+
+    status: purchaseStatusEnum("status").notNull().default("PENDING"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("property_purchases_user_idx").on(table.userId),
+
+    index("property_purchases_property_idx").on(table.propertyId),
+
+    index("property_purchases_plan_idx").on(table.paymentPlanId),
+
+    index("property_purchases_status_idx").on(table.status),
+  ],
+);
+
+export const propertyInstallments = pgTable(
+  "property_installments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    purchaseId: uuid("purchase_id")
+      .notNull()
+      .references(() => propertyPurchases.id, {
+        onDelete: "cascade",
+      }),
+
+    installmentNumber: integer("installment_number").notNull(),
+
+    amount: integer("amount").notNull(),
+
+    dueDate: timestamp("due_date", {
+      withTimezone: true,
+    }).notNull(),
+
+    paidAt: timestamp("paid_at", {
+      withTimezone: true,
+    }),
+
+    status: installmentStatusEnum("status").notNull().default("PENDING"),
+
+    paymentReference: text("payment_reference").unique(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+
+  (table) => [
+    index("property_installments_purchase_idx").on(table.purchaseId),
+
+    index("property_installments_status_idx").on(table.status),
+
+    index("property_installments_due_date_idx").on(table.dueDate),
+
+    unique("purchase_installment_unique").on(
+      table.purchaseId,
+      table.installmentNumber,
+    ),
+  ],
+);
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "restrict",
+    }),
+
+    purchaseId: uuid("purchase_id").references(() => propertyPurchases.id, {
+      onDelete: "restrict",
+    }),
+    applicationId: uuid("application_id").references(
+      () => applicationSchema.id,
+      {
+        onDelete: "restrict",
+      },
+    ),
+    amount: integer("amount").notNull(),
+
+    currency: text("currency").notNull().default("NGN"),
+
+    provider: paymentProviderEnum("provider").notNull().default("PAYSTACK"),
+
+    reference: text("reference").notNull().unique(),
+
+    status: paymentStatusEnum("status").notNull().default("PENDING"),
+    type: paymentTypeEnum("type").notNull(),
+    paidAt: timestamp("paid_at", {
+      withTimezone: true,
+    }),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("payments_user_idx").on(table.userId),
+    index("payments_purchase_idx").on(table.purchaseId),
+
+    index("payments_status_idx").on(table.status),
+  ],
+);
+export const paymentPlanInstallments = pgTable(
+  "payment_plan_installments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    paymentPlanId: uuid("payment_plan_id")
+      .notNull()
+      .references(() => paymentPlans.id, {
+        onDelete: "cascade",
+      }),
+
+    installmentNumber: integer("installment_number").notNull(),
+
+    amount: integer("amount").notNull(),
+
+    dueDate: timestamp("due_date", {
+      withTimezone: true,
+    }).notNull(),
+
+    description: text("description"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+
+  (table) => [
+    index("plan_installments_plan_idx").on(table.paymentPlanId),
+
+    unique("plan_installment_number_unique").on(
+      table.paymentPlanId,
+      table.installmentNumber,
+    ),
   ],
 );

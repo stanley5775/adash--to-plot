@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "a290831b-11c3-4f4d-aae2-bd9f760d13ac",
+  "id": "be09495e-e090-460e-bd9d-2c4166e89095",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -15,6 +15,16 @@
         "ALLOCATION"
       ],
       "name": "application_stage",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "PENDING_PAYMENT",
+        "PAID",
+        "CANCELLED"
+      ],
+      "name": "application_status",
       "entityType": "enums",
       "schema": "public"
     },
@@ -118,7 +128,7 @@
     },
     {
       "values": [
-        "FLUTTERWAVE"
+        "PAYSTACK"
       ],
       "name": "payment_provider",
       "entityType": "enums",
@@ -128,8 +138,7 @@
       "values": [
         "PENDING",
         "SUCCESSFUL",
-        "FAILED",
-        "REFUNDED"
+        "FAILED"
       ],
       "name": "payment_status",
       "entityType": "enums",
@@ -137,8 +146,9 @@
     },
     {
       "values": [
-        "PROPERTY_PAYMENT",
-        "LAND_APPLICATION_FEE"
+        "LAND_APPLICATION_FEE",
+        "PROPERTY_INSTALLMENT",
+        "ATI_MEMBERSHIP"
       ],
       "name": "payment_type",
       "entityType": "enums",
@@ -178,7 +188,19 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "property_payment_plan",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "applications",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "ati_membership_payments",
       "entityType": "tables",
       "schema": "public"
     },
@@ -190,43 +212,7 @@
     },
     {
       "isRlsEnabled": false,
-      "name": "ati_transactions",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "audit_logs",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "documents",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "estate_images",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
       "name": "estate_names",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "estates",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "inspections",
       "entityType": "tables",
       "schema": "public"
     },
@@ -244,13 +230,13 @@
     },
     {
       "isRlsEnabled": false,
-      "name": "payment_plans",
+      "name": "payment_plan_installments",
       "entityType": "tables",
       "schema": "public"
     },
     {
       "isRlsEnabled": false,
-      "name": "payment_schedules",
+      "name": "payment_plans",
       "entityType": "tables",
       "schema": "public"
     },
@@ -268,7 +254,19 @@
     },
     {
       "isRlsEnabled": false,
-      "name": "purchases",
+      "name": "properties_images",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "property_installments",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "property_purchases",
       "entityType": "tables",
       "schema": "public"
     },
@@ -295,20 +293,7 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
-      "table": "applications"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "customer_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "applications"
+      "table": "property_payment_plan"
     },
     {
       "type": "uuid",
@@ -321,17 +306,121 @@
       "name": "property_id",
       "entityType": "columns",
       "schema": "public",
-      "table": "applications"
+      "table": "property_payment_plan"
     },
     {
       "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "estate_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "integer",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "purchase_id",
+      "name": "duration_months",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "numeric(12,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "total_amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "numeric(12,2)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "monthly_amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "numeric(5,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'0'",
+      "generated": null,
+      "identity": null,
+      "name": "interest_rate",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -344,7 +433,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "full_name",
+      "name": "surname",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -357,7 +446,20 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "email",
+      "name": "first_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "middle_name",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -370,13 +472,26 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "phone",
+      "name": "sex",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
     },
     {
-      "type": "date",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "residential_address",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -384,32 +499,6 @@
       "generated": null,
       "identity": null,
       "name": "date_of_birth",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "applications"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "address",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "applications"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "occupation",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -435,7 +524,98 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "next_of_kin",
+      "name": "state_of_origin",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "phone1",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "phone2",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "occupation",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "office_address",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "next_of_kin_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "next_of_kin_relationship",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -461,7 +641,124 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "identification_type",
+      "name": "next_of_kin_address",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "is_corporate",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "business_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "rc_number",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "company_address",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nature_of_business",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "company_phone",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "company_email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "referral_source",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "referral_other",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -474,20 +771,59 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "identification_number",
+      "name": "estate",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
     },
     {
-      "type": "application_stage",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "plot_size",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "payment_option",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "acquisition_purpose",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "application_status",
       "typeSchema": "public",
       "notNull": true,
       "dimensions": 0,
-      "default": "'APPLICATION_STARTED'",
+      "default": "'PENDING_PAYMENT'",
       "generated": null,
       "identity": null,
-      "name": "stage",
+      "name": "status",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -501,6 +837,19 @@
       "generated": null,
       "identity": null,
       "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "isApplication",
       "entityType": "columns",
       "schema": "public",
       "table": "applications"
@@ -529,6 +878,162 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "membership_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "ATI_membership",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'NGN'",
+      "generated": null,
+      "identity": null,
+      "name": "currency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "payment_provider",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PAYSTACK'",
+      "generated": null,
+      "identity": null,
+      "name": "provider",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "payment_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PENDING'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reference",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paid_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "ati_memberships"
     },
     {
@@ -545,19 +1050,6 @@
       "table": "ati_memberships"
     },
     {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "membership_number",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
       "type": "ati_membership_status",
       "typeSchema": "public",
       "notNull": true,
@@ -566,110 +1058,6 @@
       "generated": null,
       "identity": null,
       "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'SELAR'",
-      "generated": null,
-      "identity": null,
-      "name": "provider",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "provider_customer_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "provider_product_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "provider_transaction_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "email",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "phone",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'NGN'",
-      "generated": null,
-      "identity": null,
-      "name": "currency",
       "entityType": "columns",
       "schema": "public",
       "table": "ati_memberships"
@@ -737,643 +1125,6 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "membership_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "user_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'SELAR'",
-      "generated": null,
-      "identity": null,
-      "name": "provider",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "provider_transaction_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "provider_customer_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "provider_product_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "external_reference",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'NGN'",
-      "generated": null,
-      "identity": null,
-      "name": "currency",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "ati_transaction_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'PENDING'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "jsonb",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "raw_metadata",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "actor_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "action",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "entity_type",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "entity_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "description",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "jsonb",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "metadata",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "customer_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "application_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "purchase_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "document_type",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "type",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "file_name",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "storage_key",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "file_url",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "mime_type",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "document_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'PENDING'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "rejection_reason",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "estate_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "main_img_url",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "main_image_public_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_1_url",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_1_public_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_2_url",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_2_public_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_3_url",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_3_public_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_4_url",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "image_4_public_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
       "table": "estate_names"
     },
     {
@@ -1401,344 +1152,6 @@
       "entityType": "columns",
       "schema": "public",
       "table": "estate_names"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "estate_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "location",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "city",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "state",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "description",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "numeric(15,2)",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "starting_price",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "total_plots",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 1,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "features",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 1,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "nearby_landmarks",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "estate_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'ACTIVE'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "customer_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "estate_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "property_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "name",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "phone",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "email",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "date",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "preferred_date",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "preferred_time",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "inspection_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'PENDING'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "notes",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "inspections"
     },
     {
       "type": "uuid",
@@ -1933,6 +1346,110 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "payment_plan_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "installment_number",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "due_date",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "payment_plans"
     },
     {
@@ -1944,6 +1461,19 @@
       "generated": null,
       "identity": null,
       "name": "property_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payment_plans"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
       "entityType": "columns",
       "schema": "public",
       "table": "payment_plans"
@@ -1962,14 +1492,14 @@
       "table": "payment_plans"
     },
     {
-      "type": "integer",
+      "type": "numeric(5,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
-      "default": null,
+      "default": "'0'",
       "generated": null,
       "identity": null,
-      "name": "interest_rate",
+      "name": "interest_percentage",
       "entityType": "columns",
       "schema": "public",
       "table": "payment_plans"
@@ -1982,7 +1512,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "base_price",
+      "name": "payment_amount",
       "entityType": "columns",
       "schema": "public",
       "table": "payment_plans"
@@ -1995,46 +1525,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "interest_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "total_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "deposit_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "monthly_amount",
+      "name": "total_payable",
       "entityType": "columns",
       "schema": "public",
       "table": "payment_plans"
@@ -2089,147 +1580,17 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "purchase_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "installment_number",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "date",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "due_date",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "installment_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'PENDING'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "paid_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "payment_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
       "table": "payments"
     },
     {
       "type": "uuid",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "customer_id",
+      "name": "user_id",
       "entityType": "columns",
       "schema": "public",
       "table": "payments"
@@ -2248,53 +1609,14 @@
       "table": "payments"
     },
     {
-      "type": "payment_type",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "type",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payments"
-    },
-    {
-      "type": "payment_provider",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'FLUTTERWAVE'",
-      "generated": null,
-      "identity": null,
-      "name": "provider",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payments"
-    },
-    {
-      "type": "text",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "provider_transaction_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payments"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "reference",
+      "name": "application_id",
       "entityType": "columns",
       "schema": "public",
       "table": "payments"
@@ -2326,6 +1648,32 @@
       "table": "payments"
     },
     {
+      "type": "payment_provider",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PAYSTACK'",
+      "generated": null,
+      "identity": null,
+      "name": "provider",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payments"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reference",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payments"
+    },
+    {
       "type": "payment_status",
       "typeSchema": "public",
       "notNull": true,
@@ -2339,14 +1687,14 @@
       "table": "payments"
     },
     {
-      "type": "jsonb",
-      "typeSchema": null,
-      "notNull": false,
+      "type": "payment_type",
+      "typeSchema": "public",
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "metadata",
+      "name": "type",
       "entityType": "columns",
       "schema": "public",
       "table": "payments"
@@ -2424,7 +1772,33 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "name",
+      "name": "location",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "state",
       "entityType": "columns",
       "schema": "public",
       "table": "properties"
@@ -2443,14 +1817,14 @@
       "table": "properties"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "size_sqm",
+      "name": "starting_price",
       "entityType": "columns",
       "schema": "public",
       "table": "properties"
@@ -2463,20 +1837,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "price",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "properties"
-    },
-    {
-      "type": "property_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'AVAILABLE'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
+      "name": "total_plots",
       "entityType": "columns",
       "schema": "public",
       "table": "properties"
@@ -2485,11 +1846,24 @@
       "type": "text",
       "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "dimensions": 1,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "image",
+      "name": "features",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nearby_landmarks",
       "entityType": "columns",
       "schema": "public",
       "table": "properties"
@@ -2531,33 +1905,7 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "customer_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "property_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
+      "table": "properties_images"
     },
     {
       "type": "uuid",
@@ -2570,124 +1918,137 @@
       "name": "estate_id",
       "entityType": "columns",
       "schema": "public",
-      "table": "purchases"
+      "table": "properties_images"
     },
     {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "payment_plan_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "property_price",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "interest_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "total_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "0",
-      "generated": null,
-      "identity": null,
-      "name": "amount_paid",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "outstanding_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "purchase_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'PENDING'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "type": "date",
+      "type": "text",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "start_date",
+      "name": "main_img_url",
       "entityType": "columns",
       "schema": "public",
-      "table": "purchases"
+      "table": "properties_images"
     },
     {
-      "type": "date",
+      "type": "text",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "next_payment_date",
+      "name": "main_image_public_id",
       "entityType": "columns",
       "schema": "public",
-      "table": "purchases"
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_1_url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_1_public_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_2_url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_2_public_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_3_url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_3_public_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_4_url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "image_4_public_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties_images"
     },
     {
       "type": "timestamp with time zone",
@@ -2700,7 +2061,7 @@
       "name": "created_at",
       "entityType": "columns",
       "schema": "public",
-      "table": "purchases"
+      "table": "properties_images"
     },
     {
       "type": "timestamp with time zone",
@@ -2713,7 +2074,319 @@
       "name": "updated_at",
       "entityType": "columns",
       "schema": "public",
-      "table": "purchases"
+      "table": "properties_images"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "purchase_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "installment_number",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "due_date",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "paid_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "installment_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PENDING'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "payment_reference",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "property_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "payment_plan_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "property_price",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "total_payable",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "amount_paid",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "balance",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "duration_months",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "payment_amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "numeric(5,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'0'",
+      "generated": null,
+      "identity": null,
+      "name": "interest_percentage",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "purchase_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PENDING'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_purchases"
     },
     {
       "type": "uuid",
@@ -2833,6 +2506,19 @@
       "table": "users"
     },
     {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "ATI_membership",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": true,
@@ -2901,27 +2587,6 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "customer_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "applications_customer_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "applications"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
           "value": "property_id",
           "isExpression": false,
           "asc": true,
@@ -2934,16 +2599,16 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "applications_property_idx",
+      "name": "property_payment_plan_property_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "applications"
+      "table": "property_payment_plan"
     },
     {
       "nameExplicit": true,
       "columns": [
         {
-          "value": "purchase_id",
+          "value": "estate_id",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -2955,16 +2620,16 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "applications_purchase_idx",
+      "name": "property_payment_plan_estate_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "applications"
+      "table": "property_payment_plan"
     },
     {
       "nameExplicit": true,
       "columns": [
         {
-          "value": "stage",
+          "value": "email",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -2976,10 +2641,115 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "applications_stage_idx",
+      "name": "applications_email_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "applications"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "applications_status_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "estate",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "applications_estate_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "membership_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ati_membership_payments_membership_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ati_membership_payments_user_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ati_membership_payments_status_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ati_membership_payments"
     },
     {
       "nameExplicit": true,
@@ -3027,69 +2797,6 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "email",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_memberships_email_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "phone",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_memberships_phone_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "provider_customer_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_memberships_provider_customer_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_memberships"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
           "value": "expiry_date",
           "isExpression": false,
           "asc": true,
@@ -3106,454 +2813,6 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "ati_memberships"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "membership_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_transactions_membership_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "user_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_transactions_user_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "provider_transaction_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_transactions_provider_transaction_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "provider_customer_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_transactions_provider_customer_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "status",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "ati_transactions_status_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "actor_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "audit_logs_actor_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "entity_type",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        },
-        {
-          "value": "entity_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "audit_logs_entity_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "created_at",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "audit_logs_created_at_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "customer_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "documents_customer_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "application_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "documents_application_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "purchase_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "documents_purchase_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "status",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "documents_status_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "estate_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "estate_images_estate_id_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "status",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "estates_status_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "city",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "estates_city_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "state",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "estates_state_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "customer_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "inspections_customer_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "estate_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "inspections_estate_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "property_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "inspections_property_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "status",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "inspections_status_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "preferred_date",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "inspections_date_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "inspections"
     },
     {
       "nameExplicit": true,
@@ -3664,6 +2923,27 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "payment_plan_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "plan_installments_plan_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "property_id",
           "isExpression": false,
           "asc": true,
@@ -3677,27 +2957,6 @@
       "method": "btree",
       "concurrently": false,
       "name": "payment_plans_property_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "duration_months",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "payment_plans_duration_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "payment_plans"
@@ -3727,7 +2986,7 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "purchase_id",
+          "value": "user_id",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -3739,70 +2998,7 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "payment_schedules_purchase_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "due_date",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "payment_schedules_due_date_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "status",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "payment_schedules_status_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "customer_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "payments_customer_idx",
+      "name": "payments_user_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "payments"
@@ -3853,7 +3049,7 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "provider_transaction_id",
+          "value": "city",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -3865,10 +3061,31 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "payments_provider_transaction_idx",
+      "name": "estates_city_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "payments"
+      "table": "properties"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "state",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "estates_state_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "properties"
     },
     {
       "nameExplicit": true,
@@ -3886,10 +3103,52 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "properties_estate_id_idx",
+      "name": "estates_estate_id_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "properties"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "estate_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "estate_images_estate_id_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "purchase_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "property_installments_purchase_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "property_installments"
     },
     {
       "nameExplicit": true,
@@ -3907,16 +3166,16 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "properties_status_idx",
+      "name": "property_installments_status_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "properties"
+      "table": "property_installments"
     },
     {
       "nameExplicit": true,
       "columns": [
         {
-          "value": "price",
+          "value": "due_date",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -3928,16 +3187,16 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "properties_price_idx",
+      "name": "property_installments_due_date_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "properties"
+      "table": "property_installments"
     },
     {
       "nameExplicit": true,
       "columns": [
         {
-          "value": "customer_id",
+          "value": "user_id",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -3949,10 +3208,10 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "purchases_customer_idx",
+      "name": "property_purchases_user_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": true,
@@ -3970,31 +3229,10 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "purchases_property_idx",
+      "name": "property_purchases_property_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "estate_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "purchases_estate_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": true,
@@ -4012,10 +3250,10 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "purchases_payment_plan_idx",
+      "name": "property_purchases_plan_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": true,
@@ -4033,31 +3271,10 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "purchases_status_idx",
+      "name": "property_purchases_status_idx",
       "entityType": "indexes",
       "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "next_payment_date",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "purchases_next_payment_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": true,
@@ -4188,23 +3405,6 @@
     {
       "nameExplicit": false,
       "columns": [
-        "customer_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "applications_customer_id_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "applications"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
         "property_id"
       ],
       "schemaTo": "public",
@@ -4213,28 +3413,62 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "applications_property_id_properties_id_fkey",
+      "onDelete": "CASCADE",
+      "name": "property_payment_plan_property_id_properties_id_fkey",
       "entityType": "fks",
       "schema": "public",
-      "table": "applications"
+      "table": "property_payment_plan"
     },
     {
       "nameExplicit": false,
       "columns": [
-        "purchase_id"
+        "estate_id"
       ],
       "schemaTo": "public",
-      "tableTo": "purchases",
+      "tableTo": "estate_names",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "applications_purchase_id_purchases_id_fkey",
+      "onDelete": "RESTRICT",
+      "name": "property_payment_plan_estate_id_estate_names_id_fkey",
       "entityType": "fks",
       "schema": "public",
-      "table": "applications"
+      "table": "property_payment_plan"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "membership_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "ati_memberships",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "ati_membership_payments_membership_id_ati_memberships_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "ati_membership_payments"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "ati_membership_payments_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "ati_membership_payments"
     },
     {
       "nameExplicit": false,
@@ -4252,193 +3486,6 @@
       "entityType": "fks",
       "schema": "public",
       "table": "ati_memberships"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "membership_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "ati_memberships",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "ati_transactions_membership_id_ati_memberships_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "ati_transactions_user_id_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "ati_transactions"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "actor_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "audit_logs_actor_id_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "audit_logs"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "customer_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "documents_customer_id_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "application_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "applications",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "documents_application_id_applications_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "purchase_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "purchases",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "documents_purchase_id_purchases_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "documents"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "estate_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "estates",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "estate_images_estate_id_estates_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "estate_images"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "estate_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "estate_names",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "estates_estate_id_estate_names_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "estates"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "customer_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "inspections_customer_id_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "estate_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "estate_names",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "inspections_estate_id_estate_names_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "inspections"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "property_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "properties",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "inspections_property_id_properties_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "inspections"
     },
     {
       "nameExplicit": false,
@@ -4477,6 +3524,23 @@
     {
       "nameExplicit": false,
       "columns": [
+        "payment_plan_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "payment_plans",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "payment_plan_installments_payment_plan_id_payment_plans_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "property_id"
       ],
       "schemaTo": "public",
@@ -4494,41 +3558,7 @@
     {
       "nameExplicit": false,
       "columns": [
-        "purchase_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "purchases",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "payment_schedules_purchase_id_purchases_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "payment_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "payments",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "payment_schedules_payment_id_payments_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "payment_schedules"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "customer_id"
+        "user_id"
       ],
       "schemaTo": "public",
       "tableTo": "users",
@@ -4537,7 +3567,7 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "payments_customer_id_users_id_fkey",
+      "name": "payments_user_id_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "payments"
@@ -4548,13 +3578,30 @@
         "purchase_id"
       ],
       "schemaTo": "public",
-      "tableTo": "purchases",
+      "tableTo": "property_purchases",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "payments_purchase_id_purchases_id_fkey",
+      "name": "payments_purchase_id_property_purchases_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "payments"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "application_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "applications",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "payments_application_id_applications_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "payments"
@@ -4579,7 +3626,41 @@
     {
       "nameExplicit": false,
       "columns": [
-        "customer_id"
+        "estate_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "properties",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "properties_images_estate_id_properties_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "properties_images"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "purchase_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "property_purchases",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "property_installments_purchase_id_property_purchases_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "property_installments"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
       ],
       "schemaTo": "public",
       "tableTo": "users",
@@ -4588,10 +3669,10 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "purchases_customer_id_users_id_fkey",
+      "name": "property_purchases_user_id_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": false,
@@ -4605,27 +3686,10 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "purchases_property_id_properties_id_fkey",
+      "name": "property_purchases_property_id_properties_id_fkey",
       "entityType": "fks",
       "schema": "public",
-      "table": "purchases"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "estate_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "estate_names",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "RESTRICT",
-      "name": "purchases_estate_id_estate_names_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": false,
@@ -4639,10 +3703,10 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "purchases_payment_plan_id_payment_plans_id_fkey",
+      "name": "property_purchases_payment_plan_id_payment_plans_id_fkey",
       "entityType": "fks",
       "schema": "public",
-      "table": "purchases"
+      "table": "property_purchases"
     },
     {
       "nameExplicit": false,
@@ -4666,9 +3730,29 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "property_payment_plan_pkey",
+      "schema": "public",
+      "table": "property_payment_plan",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "applications_pkey",
       "schema": "public",
       "table": "applications",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "ati_membership_payments_pkey",
+      "schema": "public",
+      "table": "ati_membership_payments",
       "entityType": "pks"
     },
     {
@@ -4686,66 +3770,6 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "ati_transactions_pkey",
-      "schema": "public",
-      "table": "ati_transactions",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "audit_logs_pkey",
-      "schema": "public",
-      "table": "audit_logs",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "documents_pkey",
-      "schema": "public",
-      "table": "documents",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "estate_images_pkey",
-      "schema": "public",
-      "table": "estate_images",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "estate_id"
-      ],
-      "nameExplicit": false,
-      "name": "estates_pkey",
-      "schema": "public",
-      "table": "estates",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "inspections_pkey",
-      "schema": "public",
-      "table": "inspections",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
       "name": "notifications_pkey",
       "schema": "public",
       "table": "notifications",
@@ -4756,9 +3780,19 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "payment_schedules_pkey",
+      "name": "payment_plan_installments_pkey",
       "schema": "public",
-      "table": "payment_schedules",
+      "table": "payment_plan_installments",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "payment_plans_pkey",
+      "schema": "public",
+      "table": "payment_plans",
       "entityType": "pks"
     },
     {
@@ -4786,9 +3820,29 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "purchases_pkey",
+      "name": "properties_images_pkey",
       "schema": "public",
-      "table": "purchases",
+      "table": "properties_images",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "property_installments_pkey",
+      "schema": "public",
+      "table": "property_installments",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "property_purchases_pkey",
+      "schema": "public",
+      "table": "property_purchases",
       "entityType": "pks"
     },
     {
@@ -4804,11 +3858,23 @@
     {
       "nameExplicit": true,
       "columns": [
-        "property_id",
-        "duration_months"
+        "payment_plan_id",
+        "installment_number"
       ],
       "nullsNotDistinct": false,
-      "name": "payment_plans_property_duration_unique",
+      "name": "plan_installment_number_unique",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "payment_plan_installments"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "property_id",
+        "name"
+      ],
+      "nullsNotDistinct": false,
+      "name": "payment_plan_property_name_unique",
       "entityType": "uniques",
       "schema": "public",
       "table": "payment_plans"
@@ -4820,31 +3886,20 @@
         "installment_number"
       ],
       "nullsNotDistinct": false,
-      "name": "payment_schedules_installment_unique",
+      "name": "purchase_installment_unique",
       "entityType": "uniques",
       "schema": "public",
-      "table": "payment_schedules"
+      "table": "property_installments"
     },
     {
       "nameExplicit": false,
       "columns": [
-        "membership_number"
+        "reference"
       ],
       "nullsNotDistinct": false,
-      "name": "ati_memberships_membership_number_key",
+      "name": "ati_membership_payments_reference_key",
       "schema": "public",
-      "table": "ati_memberships",
-      "entityType": "uniques"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "external_reference"
-      ],
-      "nullsNotDistinct": false,
-      "name": "ati_transactions_external_reference_key",
-      "schema": "public",
-      "table": "ati_transactions",
+      "table": "ati_membership_payments",
       "entityType": "uniques"
     },
     {
@@ -4875,31 +3930,9 @@
         "id"
       ],
       "nullsNotDistinct": false,
-      "name": "estates_id_key",
-      "schema": "public",
-      "table": "estates",
-      "entityType": "uniques"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "id"
-      ],
-      "nullsNotDistinct": false,
       "name": "password_reset_otps_id_key",
       "schema": "public",
       "table": "password_reset_otps",
-      "entityType": "uniques"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "id"
-      ],
-      "nullsNotDistinct": false,
-      "name": "payment_plans_id_key",
-      "schema": "public",
-      "table": "payment_plans",
       "entityType": "uniques"
     },
     {
@@ -4911,6 +3944,17 @@
       "name": "payments_reference_key",
       "schema": "public",
       "table": "payments",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "payment_reference"
+      ],
+      "nullsNotDistinct": false,
+      "name": "property_installments_payment_reference_key",
+      "schema": "public",
+      "table": "property_installments",
       "entityType": "uniques"
     },
     {

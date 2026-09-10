@@ -7,6 +7,7 @@ import { estates } from "@/data/estates";
 import { properties } from "@/data/properties";
 import { EstateGrid } from "@/components/estate/EstateGrid";
 import { Select } from "@/components/ui/Select";
+import { PaystackHookExample } from "@/components/paystack/Paystack";
 
 const priceBands = [
   { label: "Price", value: "" },
@@ -51,6 +52,7 @@ function EstatesContent() {
 
   return (
     <div className="container-page py-16 sm:py-20">
+      <PaystackHookExample />
       <div className="max-w-2xl">
         <span className="gold-rule mb-4 block" />
         <h1 className="text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">

@@ -1,0 +1,1585 @@
+import type { Context } from "hono";
+import { eq, and, desc, asc } from "drizzle-orm";
+
+import { db } from "../db/db";
+import {
+  properties,
+  propertiesImage,
+  estateNames,
+  paymentPlans,
+  paymentPlanInstallments,
+  propertyPurchases,
+  propertyInstallments,
+} from "../db/schema";
+
+import { createEstateSchema } from "../validators/estateV";
+import { uploadImage } from "../services/uploadImage";
+
+/* =========================================================
+   CREATE ESTATE / PROPERTY
+========================================================= */
+
+export const createEstate = async (c: Context) => {
+  try {
+    const formData = await c.req.formData();
+
+    const body = {
+      estateNameId:
+        formData.get("estateNameId")?.toString().trim() ?? "",
+
+      location:
+        formData.get("location")?.toString() ?? "",
+
+      city:
+        formData.get("city")?.toString() ?? "",
+
+      state:
+        formData.get("state")?.toString() ?? "",
+
+      description:
+        formData.get("description")?.toString().trim() || null,
+
+      startingPrice:
+        formData.get("startingPrice")?.toString().trim() ?? "",
+
+      totalPlots:
+        formData.get("totalPlots")?.toString().trim() ?? "",
+
+      features:
+        formData.get("features")?.toString().trim() ?? "",
+
+      nearbyLandmarks:
+        formData.get("nearbyLandmarks")?.toString().trim() ?? "",
+
+      status:
+        formData.get("status")?.toString().trim() || "ACTIVE",
+    };
+
+    const result = createEstateSchema.safeParse(body);
+
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          message: "Validation failed",
+          errors: result.error.issues.map(
+            (issue) => issue.message,
+          ),
+        },
+        422,
+      );
+    }
+
+    const data = result.data;
+
+    /* ---------------------------------------------
+       CHECK ESTATE NAME
+    --------------------------------------------- */
+
+    const [estateName] = await db
+      .select({
+        id: estateNames.id,
+        name: estateNames.name,
+      })
+      .from(estateNames)
+      .where(eq(estateNames.id, data.estateNameId))
+      .limit(1);
+
+    if (!estateName) {
+      return c.json(
+        {
+          success: false,
+          message: "Selected estate name does not exist",
+          data: null,
+        },
+        404,
+      );
+    }
+
+    /* ---------------------------------------------
+       FEATURES
+    --------------------------------------------- */
+
+    const features = data.features
+      ? data.features
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+
+    /* ---------------------------------------------
+       NEARBY LANDMARKS
+    --------------------------------------------- */
+
+    const nearbyLandmarks = data.nearbyLandmarks
+      ? data.nearbyLandmarks
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [];
+
+    /* ---------------------------------------------
+       IMAGES
+    --------------------------------------------- */
+
+    const mainImage = formData.get("mainImage");
+
+    const galleryFiles = formData
+      .getAll("galleryImages")
+      .filter(
+        (file): file is File =>
+          file instanceof File && file.size > 0,
+      )
+      .slice(0, 4);
+
+    const [mainImageData, uploadedImages] =
+      await Promise.all([
+        mainImage instanceof File &&
+        mainImage.size > 0
+          ? uploadImage(mainImage)
+          : Promise.resolve(null),
+
+        Promise.all(
+          galleryFiles.map((file) =>
+            uploadImage(file),
+          ),
+        ),
+      ]);
+
+    /* ---------------------------------------------
+       CREATE PROPERTY
+    --------------------------------------------- */
+
+    const [estate] = await db
+      .insert(properties)
+      .values({
+        estateId: data.estateNameId,
+
+        location: data.location,
+        city: data.city,
+        state: data.state,
+
+        description: data.description,
+
+        startingPrice:
+          data.startingPrice.toString(),
+
+        totalPlots: data.totalPlots,
+
+        features,
+        nearbyLandmarks,
+      })
+      .returning();
+
+    /* ---------------------------------------------
+       SAVE IMAGES
+    --------------------------------------------- */
+
+    const hasImages =
+      mainImageData ||
+      uploadedImages.length > 0;
+
+    if (hasImages) {
+      await db.insert(propertiesImage).values({
+        // Your current schema calls this estateId,
+        // but it actually stores properties.id.
+        estateId: estate.id,
+
+        mainImgUrl:
+          mainImageData?.url ?? null,
+
+        mainImagePublicId:
+          mainImageData?.publicId ?? null,
+
+        image1Url:
+          uploadedImages[0]?.url ?? null,
+
+        image1PublicId:
+          uploadedImages[0]?.publicId ?? null,
+
+        image2Url:
+          uploadedImages[1]?.url ?? null,
+
+        image2PublicId:
+          uploadedImages[1]?.publicId ?? null,
+
+        image3Url:
+          uploadedImages[2]?.url ?? null,
+
+        image3PublicId:
+          uploadedImages[2]?.publicId ?? null,
+
+        image4Url:
+          uploadedImages[3]?.url ?? null,
+
+        image4PublicId:
+          uploadedImages[3]?.publicId ?? null,
+      });
+    }
+
+    return c.json(
+      {
+        success: true,
+        message: "Property created successfully",
+
+        data: {
+          estate,
+
+          estateName,
+
+          images: {
+            mainImgUrl:
+              mainImageData?.url ?? null,
+
+            mainImagePublicId:
+              mainImageData?.publicId ?? null,
+
+            image1Url:
+              uploadedImages[0]?.url ?? null,
+
+            image1PublicId:
+              uploadedImages[0]?.publicId ?? null,
+
+            image2Url:
+              uploadedImages[1]?.url ?? null,
+
+            image2PublicId:
+              uploadedImages[1]?.publicId ?? null,
+
+            image3Url:
+              uploadedImages[2]?.url ?? null,
+
+            image3PublicId:
+              uploadedImages[2]?.publicId ?? null,
+
+            image4Url:
+              uploadedImages[3]?.url ?? null,
+
+            image4PublicId:
+              uploadedImages[3]?.publicId ?? null,
+          },
+        },
+      },
+      201,
+    );
+  } catch (error) {
+    console.error(
+      "CREATE ESTATE ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to create property",
+        error: "INTERNAL_SERVER_ERROR",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   CREATE ESTATE NAME
+========================================================= */
+
+export const createEstateName = async (
+  c: Context,
+) => {
+  try {
+    const body = await c.req.json();
+
+    const name =
+      body.name?.toString().trim();
+
+    if (!name) {
+      return c.json(
+        {
+          success: false,
+          message: "Estate name is required",
+          data: null,
+        },
+        422,
+      );
+    }
+
+    const existingEstate = await db
+      .select({
+        id: estateNames.id,
+        name: estateNames.name,
+      })
+      .from(estateNames)
+      .where(
+        eq(estateNames.name, name),
+      )
+      .limit(1);
+
+    if (existingEstate.length > 0) {
+      return c.json(
+        {
+          success: false,
+          message: "Estate name already exists",
+          data: existingEstate[0],
+        },
+        409,
+      );
+    }
+
+    const [estate] = await db
+      .insert(estateNames)
+      .values({
+        name,
+      })
+      .returning({
+        id: estateNames.id,
+        name: estateNames.name,
+        createdAt: estateNames.createdAt,
+      });
+
+    return c.json(
+      {
+        success: true,
+        message:
+          "Estate name created successfully",
+        data: estate,
+      },
+      201,
+    );
+  } catch (error) {
+    console.error(
+      "CREATE ESTATE NAME ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to create estate name",
+        error: "INTERNAL_SERVER_ERROR",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   GET ALL ESTATE NAMES
+========================================================= */
+
+export const getAllEstateNames = async (
+  c: Context,
+) => {
+  try {
+    const estates = await db
+      .select({
+        id: estateNames.id,
+        name: estateNames.name,
+        createdAt: estateNames.createdAt,
+      })
+      .from(estateNames)
+      .orderBy(
+        desc(estateNames.createdAt),
+      );
+
+    return c.json({
+      success: true,
+      message:
+        "Estate names fetched successfully",
+      data: estates,
+    });
+  } catch (error) {
+    console.error(
+      "GET ESTATE NAMES ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to fetch estate names",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   GET ALL PROPERTIES
+========================================================= */
+
+export const getAllEstates = async (
+  c: Context,
+) => {
+  try {
+    const allEstates = await db
+      .select({
+        id: properties.id,
+
+        estateNameId:
+          estateNames.id,
+
+        estateName:
+          estateNames.name,
+
+        location:
+          properties.location,
+
+        city:
+          properties.city,
+
+        state:
+          properties.state,
+
+        description:
+          properties.description,
+
+        startingPrice:
+          properties.startingPrice,
+
+        totalPlots:
+          properties.totalPlots,
+
+        features:
+          properties.features,
+
+        nearbyLandmarks:
+          properties.nearbyLandmarks,
+
+        createdAt:
+          properties.createdAt,
+
+        updatedAt:
+          properties.updatedAt,
+      })
+      .from(properties)
+      .innerJoin(
+        estateNames,
+        eq(
+          properties.estateId,
+          estateNames.id,
+        ),
+      )
+      .orderBy(
+        desc(properties.createdAt),
+      );
+
+    return c.json({
+      success: true,
+      message:
+        "Properties fetched successfully",
+      data: allEstates,
+    });
+  } catch (error) {
+    console.error(
+      "GET ALL PROPERTIES ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to fetch properties",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   GET ONE PROPERTY
+   Includes payment plans + installments
+========================================================= */
+
+export const getEstateById = async (
+  c: Context,
+) => {
+  try {
+    const propertyId =
+      c.req.param("id");
+
+    const [property] = await db
+      .select({
+        id: properties.id,
+
+        estateName:
+          estateNames.name,
+
+        location:
+          properties.location,
+
+        city:
+          properties.city,
+
+        state:
+          properties.state,
+
+        description:
+          properties.description,
+
+        startingPrice:
+          properties.startingPrice,
+
+        totalPlots:
+          properties.totalPlots,
+
+        features:
+          properties.features,
+
+        nearbyLandmarks:
+          properties.nearbyLandmarks,
+      })
+      .from(properties)
+      .innerJoin(
+        estateNames,
+        eq(
+          properties.estateId,
+          estateNames.id,
+        ),
+      )
+      .where(
+        eq(properties.id, propertyId),
+      )
+      .limit(1);
+
+    if (!property) {
+      return c.json(
+        {
+          success: false,
+          message: "Property not found",
+          data: null,
+        },
+        404,
+      );
+    }
+
+    const plans =
+      await db
+        .select()
+        .from(paymentPlans)
+        .where(
+          eq(
+            paymentPlans.propertyId,
+            propertyId,
+          ),
+        )
+        .orderBy(
+          asc(paymentPlans.createdAt),
+        );
+
+    const plansWithInstallments =
+      await Promise.all(
+        plans.map(async (plan) => {
+          const installments =
+            await db
+              .select()
+              .from(
+                paymentPlanInstallments,
+              )
+              .where(
+                eq(
+                  paymentPlanInstallments.paymentPlanId,
+                  plan.id,
+                ),
+              )
+              .orderBy(
+                asc(
+                  paymentPlanInstallments.installmentNumber,
+                ),
+              );
+
+          return {
+            ...plan,
+            installments,
+          };
+        }),
+      );
+
+    const [images] = await db
+      .select()
+      .from(propertiesImage)
+      .where(
+        eq(
+          propertiesImage.estateId,
+          propertyId,
+        ),
+      )
+      .limit(1);
+
+    return c.json({
+      success: true,
+      message: "Property fetched successfully",
+
+      data: {
+        property,
+
+        images: images ?? null,
+
+        paymentPlans:
+          plansWithInstallments,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "GET PROPERTY ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to fetch property",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   CREATE PAYMENT PLAN
+========================================================= */
+
+/*
+Example request:
+
+POST /admin/payment-plans
+
+{
+  "propertyId": "property-id",
+  "name": "12 Months",
+  "durationMonths": 12,
+  "interestPercentage": "9",
+  "paymentAmount": 136250,
+  "totalPayable": 1635000
+}
+*/
+
+export const createPaymentPlan = async (
+  c: Context,
+) => {
+  try {
+    const body = await c.req.json();
+
+    const {
+      propertyId,
+      name,
+      durationMonths,
+      interestPercentage,
+      paymentAmount,
+      totalPayable,
+    } = body;
+
+    if (
+      !propertyId ||
+      !name ||
+      durationMonths === undefined ||
+      paymentAmount === undefined ||
+      totalPayable === undefined
+    ) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "propertyId, name, durationMonths, paymentAmount and totalPayable are required",
+        },
+        422,
+      );
+    }
+
+    /* CHECK PROPERTY */
+
+    const [property] = await db
+      .select({
+        id: properties.id,
+      })
+      .from(properties)
+      .where(
+        eq(properties.id, propertyId),
+      )
+      .limit(1);
+
+    if (!property) {
+      return c.json(
+        {
+          success: false,
+          message: "Property not found",
+        },
+        404,
+      );
+    }
+
+    /* CHECK DUPLICATE PLAN */
+
+    const [existingPlan] =
+      await db
+        .select({
+          id: paymentPlans.id,
+        })
+        .from(paymentPlans)
+        .where(
+          and(
+            eq(
+              paymentPlans.propertyId,
+              propertyId,
+            ),
+            eq(
+              paymentPlans.name,
+              name.trim(),
+            ),
+          ),
+        )
+        .limit(1);
+
+    if (existingPlan) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "This payment plan already exists for this property",
+        },
+        409,
+      );
+    }
+
+    const [plan] = await db
+      .insert(paymentPlans)
+      .values({
+        propertyId,
+
+        name: name.trim(),
+
+        durationMonths:
+          Number(durationMonths),
+
+        interestPercentage:
+          interestPercentage
+            ?.toString() ?? "0",
+
+        paymentAmount:
+          Number(paymentAmount),
+
+        totalPayable:
+          Number(totalPayable),
+      })
+      .returning();
+
+    return c.json(
+      {
+        success: true,
+        message:
+          "Payment plan created successfully",
+        data: plan,
+      },
+      201,
+    );
+  } catch (error) {
+    console.error(
+      "CREATE PAYMENT PLAN ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to create payment plan",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   UPDATE PAYMENT PLAN
+========================================================= */
+
+export const updatePaymentPlan = async (
+  c: Context,
+) => {
+  try {
+    const planId =
+      c.req.param("planId");
+
+    const body = await c.req.json();
+
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (body.name !== undefined) {
+      updateData.name =
+        body.name.toString().trim();
+    }
+
+    if (
+      body.durationMonths !==
+      undefined
+    ) {
+      updateData.durationMonths =
+        Number(body.durationMonths);
+    }
+
+    if (
+      body.interestPercentage !==
+      undefined
+    ) {
+      updateData.interestPercentage =
+        body.interestPercentage.toString();
+    }
+
+    if (
+      body.paymentAmount !==
+      undefined
+    ) {
+      updateData.paymentAmount =
+        Number(body.paymentAmount);
+    }
+
+    if (
+      body.totalPayable !==
+      undefined
+    ) {
+      updateData.totalPayable =
+        Number(body.totalPayable);
+    }
+
+    if (body.status !== undefined) {
+      updateData.status =
+        body.status;
+    }
+
+    const [updatedPlan] =
+      await db
+        .update(paymentPlans)
+        .set(updateData)
+        .where(
+          eq(
+            paymentPlans.id,
+            planId,
+          ),
+        )
+        .returning();
+
+    if (!updatedPlan) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "Payment plan not found",
+        },
+        404,
+      );
+    }
+
+    return c.json({
+      success: true,
+      message:
+        "Payment plan updated successfully",
+      data: updatedPlan,
+    });
+  } catch (error) {
+    console.error(
+      "UPDATE PAYMENT PLAN ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to update payment plan",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   DELETE PAYMENT PLAN
+========================================================= */
+
+export const deletePaymentPlan = async (
+  c: Context,
+) => {
+  try {
+    const planId =
+      c.req.param("planId");
+
+    const [plan] =
+      await db
+        .select()
+        .from(paymentPlans)
+        .where(
+          eq(
+            paymentPlans.id,
+            planId,
+          ),
+        )
+        .limit(1);
+
+    if (!plan) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "Payment plan not found",
+        },
+        404,
+      );
+    }
+
+    /*
+      Because paymentPlanInstallments uses
+      onDelete: cascade, its installments
+      will also be deleted.
+    */
+
+    await db
+      .delete(paymentPlans)
+      .where(
+        eq(
+          paymentPlans.id,
+          planId,
+        ),
+      );
+
+    return c.json({
+      success: true,
+      message:
+        "Payment plan deleted successfully",
+    });
+  } catch (error) {
+    console.error(
+      "DELETE PAYMENT PLAN ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to delete payment plan",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   ADD INSTALLMENT TO PAYMENT PLAN
+========================================================= */
+
+/*
+Example:
+
+POST /admin/payment-plans/:planId/installments
+
+{
+  "installmentNumber": 1,
+  "amount": 300000,
+  "dueDate": "2026-10-10",
+  "description": "Initial payment"
+}
+*/
+
+export const addPlanInstallment = async (
+  c: Context,
+) => {
+  try {
+    const planId =
+      c.req.param("planId");
+
+    const body = await c.req.json();
+
+    const {
+      installmentNumber,
+      amount,
+      dueDate,
+      description,
+    } = body;
+
+    if (
+      installmentNumber ===
+        undefined ||
+      amount === undefined ||
+      !dueDate
+    ) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "installmentNumber, amount and dueDate are required",
+        },
+        422,
+      );
+    }
+
+    /* CHECK PLAN */
+
+    const [plan] = await db
+      .select()
+      .from(paymentPlans)
+      .where(
+        eq(
+          paymentPlans.id,
+          planId,
+        ),
+      )
+      .limit(1);
+
+    if (!plan) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "Payment plan not found",
+        },
+        404,
+      );
+    }
+
+    /* CHECK DUPLICATE NUMBER */
+
+    const [existing] =
+      await db
+        .select()
+        .from(
+          paymentPlanInstallments,
+        )
+        .where(
+          and(
+            eq(
+              paymentPlanInstallments.paymentPlanId,
+              planId,
+            ),
+            eq(
+              paymentPlanInstallments.installmentNumber,
+              Number(
+                installmentNumber,
+              ),
+            ),
+          ),
+        )
+        .limit(1);
+
+    if (existing) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "This installment number already exists",
+        },
+        409,
+      );
+    }
+
+    const [installment] =
+      await db
+        .insert(
+          paymentPlanInstallments,
+        )
+        .values({
+          paymentPlanId: planId,
+
+          installmentNumber:
+            Number(installmentNumber),
+
+          amount: Number(amount),
+
+          dueDate: new Date(dueDate),
+
+          description:
+            description
+              ?.toString()
+              .trim() || null,
+        })
+        .returning();
+
+    return c.json(
+      {
+        success: true,
+        message:
+          "Installment added successfully",
+        data: installment,
+      },
+      201,
+    );
+  } catch (error) {
+    console.error(
+      "ADD PLAN INSTALLMENT ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to add installment",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   GET PLAN + ALL INSTALLMENTS
+========================================================= */
+
+export const getPaymentPlan = async (
+  c: Context,
+) => {
+  try {
+    const planId =
+      c.req.param("planId");
+
+    const [plan] = await db
+      .select()
+      .from(paymentPlans)
+      .where(
+        eq(
+          paymentPlans.id,
+          planId,
+        ),
+      )
+      .limit(1);
+
+    if (!plan) {
+      return c.json(
+        {
+          success: false,
+          message:
+            "Payment plan not found",
+        },
+        404,
+      );
+    }
+
+    const installments =
+      await db
+        .select()
+        .from(
+          paymentPlanInstallments,
+        )
+        .where(
+          eq(
+            paymentPlanInstallments.paymentPlanId,
+            planId,
+          ),
+        )
+        .orderBy(
+          asc(
+            paymentPlanInstallments.installmentNumber,
+          ),
+        );
+
+    return c.json({
+      success: true,
+      message:
+        "Payment plan fetched successfully",
+
+      data: {
+        plan,
+        installments,
+      },
+    });
+  } catch (error) {
+    console.error(
+      "GET PAYMENT PLAN ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to fetch payment plan",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   UPDATE PLAN INSTALLMENT
+========================================================= */
+
+export const updatePlanInstallment =
+  async (c: Context) => {
+    try {
+      const installmentId =
+        c.req.param(
+          "installmentId",
+        );
+
+      const body = await c.req.json();
+
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      if (body.amount !== undefined) {
+        updateData.amount =
+          Number(body.amount);
+      }
+
+      if (
+        body.dueDate !== undefined
+      ) {
+        updateData.dueDate =
+          new Date(body.dueDate);
+      }
+
+      if (
+        body.description !==
+        undefined
+      ) {
+        updateData.description =
+          body.description
+            ?.toString()
+            .trim() || null;
+      }
+
+      const [updated] =
+        await db
+          .update(
+            paymentPlanInstallments,
+          )
+          .set(updateData)
+          .where(
+            eq(
+              paymentPlanInstallments.id,
+              installmentId,
+            ),
+          )
+          .returning();
+
+      if (!updated) {
+        return c.json(
+          {
+            success: false,
+            message:
+              "Installment not found",
+          },
+          404,
+        );
+      }
+
+      return c.json({
+        success: true,
+        message:
+          "Installment updated successfully",
+        data: updated,
+      });
+    } catch (error) {
+      console.error(
+        "UPDATE PLAN INSTALLMENT ERROR:",
+        error,
+      );
+
+      return c.json(
+        {
+          success: false,
+          message:
+            "Failed to update installment",
+        },
+        500,
+      );
+    }
+  };
+
+
+/* =========================================================
+   DELETE PLAN INSTALLMENT
+========================================================= */
+
+export const deletePlanInstallment =
+  async (c: Context) => {
+    try {
+      const installmentId =
+        c.req.param(
+          "installmentId",
+        );
+
+      const [deleted] =
+        await db
+          .delete(
+            paymentPlanInstallments,
+          )
+          .where(
+            eq(
+              paymentPlanInstallments.id,
+              installmentId,
+            ),
+          )
+          .returning();
+
+      if (!deleted) {
+        return c.json(
+          {
+            success: false,
+            message:
+              "Installment not found",
+          },
+          404,
+        );
+      }
+
+      return c.json({
+        success: true,
+        message:
+          "Installment deleted successfully",
+      });
+    } catch (error) {
+      console.error(
+        "DELETE PLAN INSTALLMENT ERROR:",
+        error,
+      );
+
+      return c.json(
+        {
+          success: false,
+          message:
+            "Failed to delete installment",
+        },
+        500,
+      );
+    }
+  };
+
+
+/* =========================================================
+   GET ALL CUSTOMER PURCHASES
+========================================================= */
+
+export const getAllPurchases = async (
+  c: Context,
+) => {
+  try {
+    const purchases =
+      await db.query.propertyPurchases
+        .findMany({
+          orderBy: (
+            propertyPurchases,
+            { desc },
+          ) =>
+            desc(
+              propertyPurchases.createdAt,
+            ),
+        });
+
+    return c.json({
+      success: true,
+      message:
+        "Purchases fetched successfully",
+      data: purchases,
+    });
+  } catch (error) {
+    console.error(
+      "GET ALL PURCHASES ERROR:",
+      error,
+    );
+
+    return c.json(
+      {
+        success: false,
+        message:
+          "Failed to fetch purchases",
+      },
+      500,
+    );
+  }
+};
+
+
+/* =========================================================
+   GET CUSTOMER INSTALLMENTS
+========================================================= */
+
+export const getPurchaseInstallments =
+  async (c: Context) => {
+    try {
+      const purchaseId =
+        c.req.param(
+          "purchaseId",
+        );
+
+      const installments =
+        await db
+          .select()
+          .from(
+            propertyInstallments,
+          )
+          .where(
+            eq(
+              propertyInstallments.purchaseId,
+              purchaseId,
+            ),
+          )
+          .orderBy(
+            asc(
+              propertyInstallments.installmentNumber,
+            ),
+          );
+
+      return c.json({
+        success: true,
+        message:
+          "Customer installments fetched successfully",
+        data: installments,
+      });
+    } catch (error) {
+      console.error(
+        "GET CUSTOMER INSTALLMENTS ERROR:",
+        error,
+      );
+
+      return c.json(
+        {
+          success: false,
+          message:
+            "Failed to fetch customer installments",
+        },
+        500,
+      );
+    }
+  };
+
+
+/* =========================================================
+   UPDATE CUSTOMER INSTALLMENT
+========================================================= */
+
+/*
+Admin can change an unpaid installment.
+
+Example:
+
+PATCH /admin/installments/:installmentId
+
+{
+  "amount": 150000,
+  "dueDate": "2026-11-15"
+}
+*/
+
+export const updateCustomerInstallment =
+  async (c: Context) => {
+    try {
+      const installmentId =
+        c.req.param(
+          "installmentId",
+        );
+
+      const body = await c.req.json();
+
+      const [existing] =
+        await db
+          .select()
+          .from(
+            propertyInstallments,
+          )
+          .where(
+            eq(
+              propertyInstallments.id,
+              installmentId,
+            ),
+          )
+          .limit(1);
+
+      if (!existing) {
+        return c.json(
+          {
+            success: false,
+            message:
+              "Customer installment not found",
+          },
+          404,
+        );
+      }
+
+      /*
+        Never modify a successful payment.
+      */
+
+      if (
+        existing.status === "PAID"
+      ) {
+        return c.json(
+          {
+            success: false,
+            message:
+              "A paid installment cannot be modified",
+          },
+          400,
+        );
+      }
+
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      if (body.amount !== undefined) {
+        updateData.amount =
+          Number(body.amount);
+      }
+
+      if (
+        body.dueDate !== undefined
+      ) {
+        updateData.dueDate =
+          new Date(body.dueDate);
+      }
+
+      const [updated] =
+        await db
+          .update(
+            propertyInstallments,
+          )
+          .set(updateData)
+          .where(
+            eq(
+              propertyInstallments.id,
+              installmentId,
+            ),
+          )
+          .returning();
+
+      return c.json({
+        success: true,
+        message:
+          "Customer installment updated successfully",
+        data: updated,
+      });
+    } catch (error) {
+      console.error(
+        "UPDATE CUSTOMER INSTALLMENT ERROR:",
+        error,
+      );
+
+      return c.json(
+        {
+          success: false,
+          message:
+            "Failed to update customer installment",
+        },
+        500,
+      );
+    }
+  };
