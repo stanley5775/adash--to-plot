@@ -17,6 +17,7 @@ import {
   verifyPaymentSchema,
 } from "../validators/createLandApplicationSchema ";
 import { env } from "../env";
+import STMPservice from "../services/email";
 export const getAllProperties = async (c: Context) => {
   try {
     const allProperties = await db
@@ -240,7 +241,32 @@ export const verifyApplicationPayment = async (c: Context) => {
       );
     }
 
-    // 3. Prevent processing the same payment twice
+    // 3. Make sure this is an application payment
+    if (payment.type !== "LAND_APPLICATION_FEE") {
+      return c.json(
+        {
+          success: false,
+          message: "Invalid application payment",
+        },
+        400,
+      );
+    }
+
+    // 4. Make sure payment is linked to an application
+    if (!payment.applicationId) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment is not linked to an application",
+        },
+        400,
+      );
+    }
+
+    // Now TypeScript knows this is a string
+    const applicationId = payment.applicationId;
+
+    // 5. Prevent processing the same payment twice
     if (payment.status === "SUCCESSFUL") {
       return c.json({
         success: true,
@@ -248,11 +274,12 @@ export const verifyApplicationPayment = async (c: Context) => {
         data: {
           reference: payment.reference,
           status: "success",
+          applicationId,
         },
       });
     }
 
-    // 4. Verify directly with Paystack
+    // 6. Verify directly with Paystack
     const paystackResponse = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(
         reference,
@@ -266,8 +293,7 @@ export const verifyApplicationPayment = async (c: Context) => {
     );
 
     const paystackResult = await paystackResponse.json();
-    console.log("PAYSTACK VERIFY HTTP STATUS:", paystackResponse.status);
-    console.log("PAYSTACK VERIFY RESPONSE:", paystackResult);
+
     if (!paystackResponse.ok || !paystackResult.status) {
       return c.json(
         {
@@ -279,8 +305,10 @@ export const verifyApplicationPayment = async (c: Context) => {
     }
 
     const transaction = paystackResult.data;
-    console.log(transaction, "comming from res");
-    // 5. Check actual Paystack transaction status
+
+    console.log(transaction, "coming from Paystack");
+
+    // 7. Check actual Paystack transaction status
     if (transaction.status !== "success") {
       return c.json(
         {
@@ -295,7 +323,7 @@ export const verifyApplicationPayment = async (c: Context) => {
       );
     }
 
-    // 6. Make sure the reference belongs to this payment
+    // 8. Make sure the reference belongs to this payment
     if (transaction.reference !== payment.reference) {
       return c.json(
         {
@@ -306,7 +334,7 @@ export const verifyApplicationPayment = async (c: Context) => {
       );
     }
 
-    // 7. Verify amount
+    // 9. Verify amount
     // ₦20,000 = 2,000,000 kobo
     if (transaction.amount !== 2_000_000) {
       return c.json(
@@ -318,7 +346,7 @@ export const verifyApplicationPayment = async (c: Context) => {
       );
     }
 
-    // 8. Verify currency
+    // 10. Verify currency
     if (transaction.currency !== "NGN") {
       return c.json(
         {
@@ -329,31 +357,56 @@ export const verifyApplicationPayment = async (c: Context) => {
       );
     }
 
-    // 9. Update our payment
+    const paidAt = new Date();
+
+    // 11. Update payment
     await db
       .update(payments)
       .set({
         status: "SUCCESSFUL",
-        paidAt: new Date(),
+        paidAt,
         currency: "NGN",
         reference: payment.reference,
         amount: transaction.amount,
       })
       .where(eq(payments.id, payment.id));
 
-    // 10. Update application
-    if (payment.applicationId) {
-      await db
-        .update(applicationSchema)
-        .set({
-          status: "PAID",
-          updatedAt: new Date(),
-          isApplication: true,
-        })
-        .where(eq(applicationSchema.id, payment.applicationId));
+    // 12. Update application
+    await db
+      .update(applicationSchema)
+      .set({
+        status: "PAID",
+        updatedAt: paidAt,
+        isApplication: true,
+      })
+      .where(eq(applicationSchema.id, applicationId));
+
+    // 13. Get user for email
+    const [user] = await db
+      .select({
+        full_name: users.full_name,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.id, payment.userId))
+      .limit(1);
+
+    // 14. Send application success email
+    if (user) {
+      await STMPservice.applicationSuccess(
+        {
+          full_name: user.full_name,
+          email: user.email,
+        },
+        {
+          applicationId,
+          paymentReference: transaction.reference,
+          amount: transaction.amount / 100,
+        },
+      );
     }
 
-    // 11. Tell frontend payment is confirmed
+    // 15. Tell frontend payment is confirmed
     return c.json({
       success: true,
       message: "Payment verified successfully",
@@ -364,7 +417,7 @@ export const verifyApplicationPayment = async (c: Context) => {
         amount: transaction.amount,
         currency: transaction.currency,
         channel: transaction.channel,
-        applicationId: payment.applicationId,
+        applicationId,
       },
     });
   } catch (error) {
@@ -384,9 +437,9 @@ export const createApplication = async (c: Context) => {
   try {
     // 1. Get request body
     const body = await c.req.json();
-    const user = c.get("user");
+    const authUser = c.get("userId");
 
-    if (!user?.id) {
+    if (!authUser) {
       return c.json(
         {
           success: false,
@@ -395,6 +448,8 @@ export const createApplication = async (c: Context) => {
         401,
       );
     }
+
+    const userId = authUser.id;
     // 2. Validate application data
     const result = createLandApplicationSchema.safeParse(body);
 
@@ -464,7 +519,7 @@ export const createApplication = async (c: Context) => {
     const [application] = await db
       .insert(applicationSchema)
       .values({
-        userId: user.id,
+        userId: userId,
         surname: data.surname,
         firstName: data.firstName,
         middleName: data.middleName,
@@ -519,6 +574,7 @@ export const createApplication = async (c: Context) => {
     const [payment] = await db
       .insert(payments)
       .values({
+        userId,
         applicationId: application.id,
         reference,
         amount,
@@ -559,9 +615,9 @@ export const createApplication = async (c: Context) => {
 };
 export const checkApplication = async (c: Context) => {
   try {
-    const user = c.get("user");
+    const authUser = c.get("userId");
 
-    if (!user?.id) {
+    if (!authUser) {
       return c.json(
         {
           success: false,
@@ -571,6 +627,8 @@ export const checkApplication = async (c: Context) => {
       );
     }
 
+    const userId = authUser.id;
+
     const [application] = await db
       .select({
         id: applicationSchema.id,
@@ -578,7 +636,7 @@ export const checkApplication = async (c: Context) => {
         status: applicationSchema.status,
       })
       .from(applicationSchema)
-      .where(eq(applicationSchema.userId, user.id))
+      .where(eq(applicationSchema.userId, userId))
       .limit(1);
 
     return c.json({
@@ -601,5 +659,3 @@ export const checkApplication = async (c: Context) => {
     );
   }
 };
-
-// GET /api/users/check_application?email=john@gmail.com

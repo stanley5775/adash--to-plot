@@ -33,6 +33,7 @@ CREATE TABLE "applications" (
 	"surname" text NOT NULL,
 	"first_name" text NOT NULL,
 	"middle_name" text,
+	"user_id" uuid NOT NULL,
 	"sex" text NOT NULL,
 	"residential_address" text NOT NULL,
 	"date_of_birth" text NOT NULL,
@@ -62,7 +63,7 @@ CREATE TABLE "applications" (
 	"acquisition_purpose" text NOT NULL,
 	"status" "application_status" DEFAULT 'PENDING_PAYMENT'::"application_status" NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"isApplication" boolean,
+	"isApplication" boolean DEFAULT false NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -85,6 +86,7 @@ CREATE TABLE "ati_memberships" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"user_id" uuid NOT NULL,
 	"status" "ati_membership_status" DEFAULT 'PENDING'::"ati_membership_status" NOT NULL,
+	"ATI_membership" boolean DEFAULT false NOT NULL,
 	"start_date" timestamp with time zone,
 	"expiry_date" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -145,7 +147,8 @@ CREATE TABLE "payment_plans" (
 --> statement-breakpoint
 CREATE TABLE "payments" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-	"user_id" uuid,
+	"user_id" uuid NOT NULL,
+	"membership_id" uuid,
 	"purchase_id" uuid,
 	"application_id" uuid,
 	"amount" integer NOT NULL,
@@ -284,6 +287,7 @@ CREATE INDEX "users_role_idx" ON "users" ("role");--> statement-breakpoint
 CREATE INDEX "users_active_idx" ON "users" ("is_active");--> statement-breakpoint
 ALTER TABLE "property_payment_plan" ADD CONSTRAINT "property_payment_plan_property_id_properties_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "property_payment_plan" ADD CONSTRAINT "property_payment_plan_estate_id_estate_names_id_fkey" FOREIGN KEY ("estate_id") REFERENCES "estate_names"("id") ON DELETE RESTRICT;--> statement-breakpoint
+ALTER TABLE "applications" ADD CONSTRAINT "applications_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT;--> statement-breakpoint
 ALTER TABLE "ati_membership_payments" ADD CONSTRAINT "ati_membership_payments_membership_id_ati_memberships_id_fkey" FOREIGN KEY ("membership_id") REFERENCES "ati_memberships"("id") ON DELETE RESTRICT;--> statement-breakpoint
 ALTER TABLE "ati_membership_payments" ADD CONSTRAINT "ati_membership_payments_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT;--> statement-breakpoint
 ALTER TABLE "ati_memberships" ADD CONSTRAINT "ati_memberships_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT;--> statement-breakpoint
@@ -292,6 +296,7 @@ ALTER TABLE "password_reset_otps" ADD CONSTRAINT "password_reset_otps_user_id_us
 ALTER TABLE "payment_plan_installments" ADD CONSTRAINT "payment_plan_installments_payment_plan_id_payment_plans_id_fkey" FOREIGN KEY ("payment_plan_id") REFERENCES "payment_plans"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "payment_plans" ADD CONSTRAINT "payment_plans_property_id_properties_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "payments" ADD CONSTRAINT "payments_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT;--> statement-breakpoint
+ALTER TABLE "payments" ADD CONSTRAINT "payments_membership_id_ati_memberships_id_fkey" FOREIGN KEY ("membership_id") REFERENCES "ati_memberships"("id") ON DELETE RESTRICT;--> statement-breakpoint
 ALTER TABLE "payments" ADD CONSTRAINT "payments_purchase_id_property_purchases_id_fkey" FOREIGN KEY ("purchase_id") REFERENCES "property_purchases"("id") ON DELETE RESTRICT;--> statement-breakpoint
 ALTER TABLE "payments" ADD CONSTRAINT "payments_application_id_applications_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE RESTRICT;--> statement-breakpoint
 ALTER TABLE "properties" ADD CONSTRAINT "properties_estate_id_estate_names_id_fkey" FOREIGN KEY ("estate_id") REFERENCES "estate_names"("id") ON DELETE RESTRICT;--> statement-breakpoint

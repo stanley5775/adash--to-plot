@@ -15,7 +15,7 @@ import {
   useVerifyApplicationPayment,
 } from "../../../hook/users";
 
-import { useGetEstates } from "../../../hook/All";
+import { useGetEstates } from "../../../hook/useGetEstates";
 
 declare global {
   interface Window {

@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import admin from "./route/admin.routes";
 import users from "./route/users.routes";
+import ati from "./route/ati.members";
 
 const app = new Hono();
 const allowedOrigins = [
@@ -37,6 +38,7 @@ app.get("/health", (c) => {
 app.route("/auth", authRoutes);
 app.route("/admin/estate", admin);
 app.route("/api/users", users);
+app.route("/api/ati", ati);
 app.onError((err, c) => {
   return c.json(
     {
@@ -48,11 +50,3 @@ app.onError((err, c) => {
   );
 });
 export default app;
-
-// message: "Approved";
-// redirecturl: "?trxref=1788999543262&reference=1788999543262";
-// reference: "1788999543262";
-// status: "success";
-// trans: "6543015811";
-// transaction: "6543015811";
-// trxref: "1788999543262";

@@ -115,7 +115,6 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 ]);
 
 // USERS
-// USERS
 export const users = pgTable(
   "users",
   {
@@ -127,7 +126,6 @@ export const users = pgTable(
 
     phone_number: text("phone").notNull(),
 
-    // ATI Membership
     ATI_membership: boolean("ATI_membership").notNull().default(false),
 
     Password: text("password_hash").notNull(),
@@ -181,7 +179,9 @@ export const estateNames = pgTable("estate_names", {
   id: uuid("id").defaultRandom().notNull().unique(),
 
   name: text("name").notNull().unique(),
-
+  accountName: text("account_name").notNull(),
+  accountNumber: text("account_number").notNull(),
+  bankName: text("bank_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -411,7 +411,7 @@ export const applicationSchema = pgTable(
     })
       .notNull()
       .defaultNow(),
-    isApplication: boolean("isApplication"),
+    isApplication: boolean("isApplication").notNull().default(false),
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
     })
@@ -427,6 +427,7 @@ export const applicationSchema = pgTable(
 );
 
 //ATI MEMBERSHIPS
+
 export const atiMemberships = pgTable(
   "ati_memberships",
   {
@@ -762,10 +763,14 @@ export const payments = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
-    userId: uuid("user_id").references(() => users.id, {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
+    membershipId: uuid("membership_id").references(() => atiMemberships.id, {
       onDelete: "restrict",
     }),
-
     purchaseId: uuid("purchase_id").references(() => propertyPurchases.id, {
       onDelete: "restrict",
     }),

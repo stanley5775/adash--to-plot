@@ -45,11 +45,13 @@ export function LoginForm() {
       {
         onSuccess: (data) => {
           toast.success("Login successful!");
+          console.log(data, "login");
           setUser(data.user);
           if (data.user.role === "ADMIN") {
             router.push("admin");
+          } else {
+            router.push("estates");
           }
-          router.push("estates");
           console.log(data, "fromlogin");
           reset();
         },

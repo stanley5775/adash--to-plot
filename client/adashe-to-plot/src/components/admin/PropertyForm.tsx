@@ -4,6 +4,10 @@ import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { useGetEstates } from "../../../hook/useGetEstates";
+import { useCreateEstate } from "../../../hook/admin";
+import toast from "react-hot-toast";
+import { LoaderCircle } from "lucide-react";
 
 type EstateFormValues = {
   estateNameId: string;
@@ -25,32 +29,19 @@ type EstateFormValues = {
   galleryImage4: FileList;
 };
 
-const estateNames = [
-  {
-    id: "estate-name-1",
-    name: "Adashè Estate",
-  },
-  {
-    id: "estate-name-2",
-    name: "Thrive Estate",
-  },
-  {
-    id: "estate-name-3",
-    name: "AMIO Vista Homes",
-  },
-];
-
 export function Property() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<EstateFormValues>({
     defaultValues: {
       status: "ACTIVE",
     },
   });
-
+  const { data: estates = [], isLoading: estatesLoading } = useGetEstates();
+  const createEstate = useCreateEstate();
   function onSubmit(data: EstateFormValues) {
     const formData = new FormData();
 
@@ -88,8 +79,15 @@ export function Property() {
     if (data.galleryImage4?.[0]) {
       formData.append("galleryImages", data.galleryImage4[0]);
     }
-
-    console.log("Estate FormData:", formData);
+    createEstate.mutate(formData, {
+      onSuccess: () => {
+        toast.success("Property created successfully");
+        reset();
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
   }
 
   return (
@@ -97,26 +95,39 @@ export function Property() {
       onSubmit={handleSubmit(onSubmit)}
       className="grid grid-cols-1 gap-5 rounded-2xl border border-navy-800/10 bg-white p-6 sm:grid-cols-2 sm:p-8">
       {/* Estate Name */}
-      <div>
+      <div className="space-y-2">
         <Select
           label="Estate Name"
           id="estateNameId"
-          options={estateNames.map((estate) => ({
-            label: estate.name,
-            value: estate.id,
-          }))}
+          disabled={estatesLoading}
+          options={
+            estatesLoading
+              ? [
+                  {
+                    value: "",
+                    label: "Loading estates...",
+                  },
+                ]
+              : [
+                  {
+                    value: "",
+                    label: "No selection",
+                  },
+                  ...estates.map((estate) => ({
+                    value: estate.id,
+                    label: estate.name,
+                  })),
+                ]
+          }
           {...register("estateNameId", {
             required: "Estate name is required",
           })}
         />
 
         {errors.estateNameId && (
-          <p className="mt-1 text-sm text-status-sold">
-            {errors.estateNameId.message}
-          </p>
+          <p className="text-sm text-red-500">{errors.estateNameId.message}</p>
         )}
       </div>
-
       {/* Location */}
       <div>
         <Input
@@ -134,7 +145,6 @@ export function Property() {
           </p>
         )}
       </div>
-
       {/* City */}
       <div>
         <Input
@@ -150,7 +160,6 @@ export function Property() {
           <p className="mt-1 text-sm text-status-sold">{errors.city.message}</p>
         )}
       </div>
-
       {/* State */}
       <div>
         <Input
@@ -168,7 +177,6 @@ export function Property() {
           </p>
         )}
       </div>
-
       {/* Starting Price */}
       <div>
         <Input
@@ -187,7 +195,6 @@ export function Property() {
           </p>
         )}
       </div>
-
       {/* Total Plots */}
       <div>
         <Input
@@ -206,9 +213,7 @@ export function Property() {
           </p>
         )}
       </div>
-
       {/* Status */}
-
       {/* Description */}
       <div className="sm:col-span-2">
         <label
@@ -225,7 +230,6 @@ export function Property() {
           {...register("description")}
         />
       </div>
-
       {/* Features */}
       <div>
         <Input
@@ -239,7 +243,6 @@ export function Property() {
           Separate features with commas.
         </p>
       </div>
-
       {/* Nearby Landmarks */}
       <div>
         <Input
@@ -253,7 +256,6 @@ export function Property() {
           Separate landmarks with commas.
         </p>
       </div>
-
       {/* Main Image */}
       <div className="sm:col-span-2">
         <label htmlFor="mainImage" className="text-sm font-medium text-ink-700">
@@ -270,7 +272,6 @@ export function Property() {
 
         <p className="mt-1 text-xs text-ink-500">Main property image.</p>
       </div>
-
       {/*GALLERY */}
       <div className="sm:col-span-2">
         <div className="mb-4">
@@ -358,11 +359,21 @@ export function Property() {
           </div>
         </div>
       </div>
-
       {/* Submit */}
-      <div className="sm:col-span-2">
-        <Button type="submit">Save Estate</Button>
-      </div>
+
+      <Button
+        type="submit"
+        disabled={createEstate.isPending}
+        className="mt-2 disabled:cursor-not-allowed disabled:opacity-50">
+        {createEstate.isPending ? (
+          <>
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+            Creating...
+          </>
+        ) : (
+          "Save property"
+        )}
+      </Button>
     </form>
   );
 }

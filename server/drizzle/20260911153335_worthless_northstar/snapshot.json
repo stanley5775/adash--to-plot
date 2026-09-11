@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "be09495e-e090-460e-bd9d-2c4166e89095",
+  "id": "92d7f017-2715-4991-a852-318b3b0cf928",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -465,6 +465,19 @@
       "table": "applications"
     },
     {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": true,
@@ -844,9 +857,9 @@
     {
       "type": "boolean",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
-      "default": null,
+      "default": "false",
       "generated": null,
       "identity": null,
       "name": "isApplication",
@@ -1058,6 +1071,19 @@
       "generated": null,
       "identity": null,
       "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ati_memberships"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "ATI_membership",
       "entityType": "columns",
       "schema": "public",
       "table": "ati_memberships"
@@ -1585,12 +1611,25 @@
     {
       "type": "uuid",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
       "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "payments"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "membership_id",
       "entityType": "columns",
       "schema": "public",
       "table": "payments"
@@ -3439,6 +3478,23 @@
     {
       "nameExplicit": false,
       "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "applications_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "applications"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "membership_id"
       ],
       "schemaTo": "public",
@@ -3568,6 +3624,23 @@
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "payments_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "payments"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "membership_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "ati_memberships",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "payments_membership_id_ati_memberships_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "payments"

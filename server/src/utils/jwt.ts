@@ -7,23 +7,40 @@ export const generateTokens = async (
   userId: string,
   email: string,
   full_name: string,
+  role: string,
   plan?: string,
 ) => {
   const now = Math.floor(Date.now() / 1000);
 
   const accessExp = now + FIFTEEN_MINUTES_SECONDS;
   const refreshExp = now + SEVEN_DAYS_SECONDS;
+
   const refreshExpDate = new Date(Date.now() + SEVEN_DAYS_SECONDS * 1000);
 
   const accessToken = await sign(
-    { id: userId, email, full_name, plan, exp: accessExp },
+    {
+      id: userId,
+      email,
+      full_name,
+      role,
+      plan,
+      exp: accessExp,
+    },
     env.JWT_ACCESS_SECRET,
   );
 
   const refreshToken = await sign(
-    { id: userId, exp: refreshExp },
+    {
+      id: userId,
+      role,
+      exp: refreshExp,
+    },
     env.JWT_REFRESH_SECRET,
   );
 
-  return { accessToken, refreshToken, refreshExpDate };
+  return {
+    accessToken,
+    refreshToken,
+    refreshExpDate,
+  };
 };

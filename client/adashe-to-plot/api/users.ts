@@ -1,17 +1,15 @@
 const api = process.env.NEXT_PUBLIC_BACKEND;
 
 export const application = async (data: any) => {
-  const res = await fetch(
-    `http://localhost:3000/api/users/create_application`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+  const res = await fetch(`${api}/api/users/create_application`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-  );
-  console.log(api, "seen");
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+
   const result = await res.json();
 
   if (!res.ok) {
@@ -27,6 +25,7 @@ export const verify = async (data: any) => {
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 

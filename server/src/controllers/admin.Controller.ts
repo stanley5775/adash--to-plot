@@ -12,6 +12,7 @@ import { createEstateSchema } from "../validators/estateV";
 import { uploadImage } from "../services/uploadImage";
 import { and, eq } from "drizzle-orm";
 import { createPropertyPaymentPlansSchema } from "../validators/propertyPlan";
+import { createEstateNameSchema } from "../validators/createEstate";
 
 export const createEstate = async (c: Context) => {
   try {
@@ -181,29 +182,24 @@ export const createEstate = async (c: Context) => {
 export const createEstateName = async (c: Context) => {
   try {
     const body = await c.req.json();
-
-    const name = body.name?.toString().trim();
-
-    if (!name) {
+    const result = createEstateNameSchema.safeParse(body);
+    if (!result.success) {
       return c.json(
         {
           success: false,
-          message: "Estate name is required",
+          message: "Invalid estate information",
+          errors: result.error.flatten(),
           data: null,
         },
         422,
       );
     }
-
+    const { name, accountName, accountNumber, bankName } = result.data;
     const existingEstate = await db
-      .select({
-        id: estateNames.id,
-        name: estateNames.name,
-      })
+      .select({ id: estateNames.id, name: estateNames.name })
       .from(estateNames)
       .where(eq(estateNames.name, name))
       .limit(1);
-
     if (existingEstate.length > 0) {
       return c.json(
         {
@@ -214,18 +210,22 @@ export const createEstateName = async (c: Context) => {
         409,
       );
     }
-
     const [estate] = await db
       .insert(estateNames)
       .values({
         name,
+        accountName,
+        accountNumber,
+        bankName,
       })
       .returning({
         id: estateNames.id,
+        bankName: estateNames.bankName,
         name: estateNames.name,
+        accountName: estateNames.accountName,
+        accountNumber: estateNames.accountNumber,
         createdAt: estateNames.createdAt,
       });
-
     return c.json(
       {
         success: true,
@@ -236,7 +236,6 @@ export const createEstateName = async (c: Context) => {
     );
   } catch (error) {
     console.error("CREATE ESTATE NAME ERROR:", error);
-
     return c.json(
       {
         success: false,
@@ -255,9 +254,13 @@ export const getAllEstates = async (c: Context) => {
       .select({
         id: estateNames.id,
         name: estateNames.name,
+        accountName: estateNames.accountName,
+        accountNumber: estateNames.accountNumber,
+        bankName: estateNames.bankName,
+        createdAt: estateNames.createdAt,
       })
-      .from(properties)
-      .innerJoin(estateNames, eq(propertiesImage.estateId, estateNames.id));
+      .from(estateNames);
+
     return c.json(
       {
         success: true,
@@ -461,37 +464,6 @@ export const createPropertyPaymentPlans = async (c: Context) => {
         success: false,
         message: "Failed to create payment plans",
         error: "INTERNAL_SERVER_ERROR",
-        data: null,
-      },
-      500,
-    );
-  }
-};
-
-export const getAllEstatesName = async (c: Context) => {
-  try {
-    const estates = await db
-      .select({
-        id: estateNames.id,
-        estateName: estateNames.name,
-      })
-      .from(estateNames);
-
-    return c.json(
-      {
-        success: true,
-        message: "Estates fetched successfully",
-        data: estates,
-      },
-      200,
-    );
-  } catch (error) {
-    console.error("GET ALL ESTATES ERROR:", error);
-
-    return c.json(
-      {
-        success: false,
-        message: "Failed to fetch estates",
         data: null,
       },
       500,

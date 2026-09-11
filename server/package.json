@@ -13,6 +13,7 @@
     "hono": "^4.13.5",
     "nodemailer": "^10.0.0",
     "pg": "^8.23.0",
+    "resend": "^6.27.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {

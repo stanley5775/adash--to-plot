@@ -1,19 +1,20 @@
 import type { Context, Next } from "hono";
+
 export const authorize = (...roles: string[]) => {
   return async (c: Context, next: Next) => {
-    const user = c.get("user");
-
-    if (!user) {
+    const authUser = c.get("userId");
+    console.log("AUTHORIZE DEBUG:", authUser);
+    if (!authUser) {
       return c.json(
         {
           success: false,
-          message: "Not authenticated",
+          message: "Unauthorized",
         },
         401,
       );
     }
 
-    if (!roles.includes(user.role)) {
+    if (!roles.includes(authUser.role)) {
       return c.json(
         {
           success: false,
