@@ -15,7 +15,8 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
-import { resetPassword } from "@/services/password-reset.service";
+import { useResetPassword } from "../../../hook/useResetPassword";
+import toast from "react-hot-toast";
 
 type ResetPasswordFormData = {
   password: string;
@@ -24,73 +25,96 @@ type ResetPasswordFormData = {
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") ?? "";
+
+  const email = searchParams.get("email") ?? "";
+  const otp = searchParams.get("otp") ?? "";
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const { mutate: resetPassword, isPending } = useResetPassword();
 
   const {
     register,
     handleSubmit,
     watch,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ResetPasswordFormData>();
 
   const password = watch("password", "");
 
-  async function onSubmit(data: ResetPasswordFormData) {
-    if (!token) {
+  function onSubmit(data: ResetPasswordFormData) {
+    // Make sure email and OTP exist before calling the API
+    if (!email || !otp) {
+      toast.error(
+        "Your password reset session is invalid. Please start the process again.",
+      );
       setError("root", {
-        type: "token",
-        message: "This password reset link is invalid or incomplete.",
-      });
-      return;
-    }
-
-    const result = await resetPassword({
-      token,
-      password: data.password,
-    });
-
-    if (!result.success) {
-      setError("root", {
-        type: "server",
+        type: "session",
         message:
-          result.error ?? "Unable to reset your password. Please try again.",
+          "Your password reset session is invalid. Please start the process again.",
       });
       return;
     }
 
-    setSuccess(true);
+    resetPassword(
+      {
+        email,
+        otp,
+        newPassword: data.password,
+        confirmPassword: data.confirmPassword,
+      },
+      {
+        onSuccess: (data) => {
+          toast.success(data.message);
+          setSuccess(true);
+        },
+
+        onError: (error) => {
+          setError("root", {
+            type: "server",
+            message:
+              error.message ||
+              "Unable to reset your password. Please try again.",
+          });
+        },
+      },
+    );
   }
 
-  if (!token) {
+  // ------------------------------------
+  // INVALID RESET SESSION
+  // ------------------------------------
+  if (!email || !otp) {
     return (
       <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
         <div className="w-full max-w-md rounded-3xl border border-navy-800/10 bg-white p-8 text-center sm:p-10">
           <KeyRound className="mx-auto h-10 w-10 text-status-sold" />
 
           <h1 className="mt-5 text-2xl font-bold text-navy-950">
-            Invalid reset link
+            Invalid reset session
           </h1>
 
           <p className="mt-3 text-sm leading-6 text-ink-500">
-            This password reset link is missing a valid reset token.
+            Your password reset session is missing the required verification
+            information.
           </p>
 
           <Link
             href="/forgot-password"
-            className="mt-6 inline-flex font-semibold text-navy-800 hover:text-gold-600"
-          >
-            Request a new reset link
+            className="mt-6 inline-flex font-semibold text-navy-800 hover:text-gold-600">
+            Start again
           </Link>
         </div>
       </div>
     );
   }
 
+  // ------------------------------------
+  // SUCCESS
+  // ------------------------------------
   if (success) {
     return (
       <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
@@ -110,8 +134,7 @@ function ResetPasswordForm() {
 
           <Link
             href="/login"
-            className="mt-6 inline-flex font-semibold text-navy-800 hover:text-gold-600"
-          >
+            className="mt-6 inline-flex font-semibold text-navy-800 hover:text-gold-600">
             Continue to Log In
           </Link>
         </div>
@@ -119,6 +142,9 @@ function ResetPasswordForm() {
     );
   }
 
+  // ------------------------------------
+  // RESET PASSWORD UI
+  // ------------------------------------
   return (
     <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
       <div className="w-full max-w-md rounded-3xl border border-navy-800/10 bg-white p-8 sm:p-10">
@@ -139,8 +165,8 @@ function ResetPasswordForm() {
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="mt-8 flex flex-col gap-4"
-        >
+          className="mt-8 flex flex-col gap-4">
+          {/* NEW PASSWORD */}
           <div className="relative">
             <Input
               label="New password"
@@ -167,8 +193,7 @@ function ResetPasswordForm() {
               type="button"
               onClick={() => setShowPassword((value) => !value)}
               className="absolute right-3 top-[34px] rounded-lg p-2 text-ink-400 hover:text-navy-800"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
+              aria-label={showPassword ? "Hide password" : "Show password"}>
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
               ) : (
@@ -185,6 +210,7 @@ function ResetPasswordForm() {
 
           <PasswordChecklist password={password} />
 
+          {/* CONFIRM PASSWORD */}
           <div className="relative">
             <Input
               label="Confirm new password"
@@ -206,8 +232,7 @@ function ResetPasswordForm() {
               className="absolute right-3 top-[34px] rounded-lg p-2 text-ink-400 hover:text-navy-800"
               aria-label={
                 showConfirmPassword ? "Hide password" : "Show password"
-              }
-            >
+              }>
               {showConfirmPassword ? (
                 <EyeOff className="h-4 w-4" />
               ) : (
@@ -222,14 +247,15 @@ function ResetPasswordForm() {
             </p>
           )}
 
+          {/* API ERROR */}
           {errors.root && (
             <p className="rounded-lg border border-status-sold/20 bg-[#f8e9e9] px-3 py-2.5 text-sm text-status-sold">
               {errors.root.message}
             </p>
           )}
 
-          <Button type="submit" disabled={isSubmitting} className="mt-2">
-            {isSubmitting ? (
+          <Button type="submit" disabled={isPending} className="mt-2">
+            {isPending ? (
               <>
                 <LoaderCircle className="h-4 w-4 animate-spin" />
                 Resetting password…
@@ -244,8 +270,7 @@ function ResetPasswordForm() {
           Remember your password?{" "}
           <Link
             href="/login"
-            className="font-semibold text-navy-800 hover:text-gold-600"
-          >
+            className="font-semibold text-navy-800 hover:text-gold-600">
             Log in
           </Link>
         </p>

@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Star,
 } from "lucide-react";
+
 import { estates } from "@/data/estates";
 import { properties } from "@/data/properties";
 import { Button } from "@/components/ui/Button";
@@ -18,14 +19,39 @@ import { PropertyCard } from "@/components/property/PropertyCard";
 import { HeroSearch } from "@/components/home/HeroSearch";
 import { WhatsAppButton } from "@/components/booking/WhatsAppButton";
 import { formatNaira } from "@/lib/payment";
+import AdminOverviewPage from "@/components/admin/AdminOverviewPage";
 
 const whyUs = [
-  { icon: ShieldCheck, title: "Verified Locations", copy: "Every estate is inspected and title-verified before it ever reaches our platform." },
-  { icon: Wallet, title: "Flexible Payment Plans", copy: "Spread your investment from 6 to 24 months, or pay outright — your choice." },
-  { icon: FileCheck2, title: "Secure Documentation", copy: "Survey plans, deeds and allocation letters are tracked from day one." },
-  { icon: MapPinned, title: "Strategic Locations", copy: "We select estates along Abuja's fastest-growing residential corridors." },
-  { icon: Headset, title: "Professional Support", copy: "A dedicated advisor guides you from inspection to allocation." },
-  { icon: TrendingUp, title: "Investment Opportunities", copy: "Options built for owner-occupiers and yield-focused investors alike." },
+  {
+    icon: ShieldCheck,
+    title: "Verified Locations",
+    copy: "Every estate is inspected and title-verified before it ever reaches our platform.",
+  },
+  {
+    icon: Wallet,
+    title: "Flexible Payment Plans",
+    copy: "Spread your investment from 6 to 24 months, or pay outright — your choice.",
+  },
+  {
+    icon: FileCheck2,
+    title: "Secure Documentation",
+    copy: "Survey plans, deeds and allocation letters are tracked from day one.",
+  },
+  {
+    icon: MapPinned,
+    title: "Strategic Locations",
+    copy: "We select estates along Abuja's fastest-growing residential corridors.",
+  },
+  {
+    icon: Headset,
+    title: "Professional Support",
+    copy: "A dedicated advisor guides you from inspection to allocation.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Investment Opportunities",
+    copy: "Options built for owner-occupiers and yield-focused investors alike.",
+  },
 ];
 
 const featuredProperties = [
@@ -59,12 +85,18 @@ export default function HomePage() {
               Build Your Future.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-navy-100/80">
-              Adashè-to-Plot helps you discover and invest in verified residential plots and premium homes across
-              Abuja — with flexible payment plans and documentation you can trust, every step of the way.
+              Adashè-to-Plot helps you discover and invest in verified
+              residential plots and premium homes across Abuja — with flexible
+              payment plans and documentation you can trust, every step of the
+              way.
             </p>
             <div className="mt-9 flex flex-wrap gap-4">
-              <Button href="/estates" size="lg">Explore Properties</Button>
-              <Button href="/contact" variant="secondary" size="lg">Book an Inspection</Button>
+              <Button href="/estates" size="lg">
+                Explore Properties
+              </Button>
+              <Button href="/contact" variant="secondary" size="lg">
+                Book an Inspection
+              </Button>
             </div>
           </div>
 
@@ -77,10 +109,17 @@ export default function HomePage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="gold-rule mb-4 block" />
-            <h2 className="text-3xl font-bold tracking-tight text-navy-950">Featured Estates</h2>
-            <p className="mt-2 max-w-lg text-ink-500">Two distinct communities in Kuje, Abuja — each built for a different kind of investor.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-navy-950">
+              Featured Estates
+            </h2>
+            <p className="mt-2 max-w-lg text-ink-500">
+              Two distinct communities in Kuje, Abuja — each built for a
+              different kind of investor.
+            </p>
           </div>
-          <Link href="/estates" className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-800 hover:text-gold-600">
+          <Link
+            href="/estates"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-800 hover:text-gold-600">
             View all estates <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -96,14 +135,23 @@ export default function HomePage() {
         <div className="container-page">
           <div className="max-w-xl">
             <span className="gold-rule mb-4 block" />
-            <h2 className="text-3xl font-bold tracking-tight text-white">Why Adashè-to-Plot</h2>
-            <p className="mt-2 text-navy-100/70">The fundamentals we don&apos;t compromise on, on every estate we bring to the platform.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-white">
+              Why Adashè-to-Plot
+            </h2>
+            <p className="mt-2 text-navy-100/70">
+              The fundamentals we don&apos;t compromise on, on every estate we
+              bring to the platform.
+            </p>
           </div>
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {whyUs.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
                 <item.icon className="h-7 w-7 text-gold-400" />
-                <h3 className="mt-4 text-base font-bold text-white">{item.title}</h3>
+                <h3 className="mt-4 text-base font-bold text-white">
+                  {item.title}
+                </h3>
                 <p className="mt-2 text-sm text-navy-100/70">{item.copy}</p>
               </div>
             ))}
@@ -116,8 +164,13 @@ export default function HomePage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="gold-rule mb-4 block" />
-            <h2 className="text-3xl font-bold tracking-tight text-navy-950">Featured Properties</h2>
-            <p className="mt-2 max-w-lg text-ink-500">A cross-section of what&apos;s available right now across our estates.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-navy-950">
+              Featured Properties
+            </h2>
+            <p className="mt-2 max-w-lg text-ink-500">
+              A cross-section of what&apos;s available right now across our
+              estates.
+            </p>
           </div>
         </div>
         <div className="mt-10">
@@ -130,37 +183,63 @@ export default function HomePage() {
         <div className="container-page grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div>
             <span className="gold-rule mb-4 block" />
-            <h2 className="text-3xl font-bold tracking-tight text-navy-950">Pay Small Small, Own a Property</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-navy-950">
+              Pay Small Small, Own a Property
+            </h2>
             <p className="mt-4 text-ink-500">
-              Choose outright payment or spread your investment over 6, 12, 18 or 24 months. Every plan is
-              transparent from day one — your deposit, monthly amount, and total cost are laid out before you commit.
+              Choose outright payment or spread your investment over 6, 12, 18
+              or 24 months. Every plan is transparent from day one — your
+              deposit, monthly amount, and total cost are laid out before you
+              commit.
             </p>
             <ul className="mt-6 space-y-3 text-sm text-ink-700">
-              <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-gold-500" /> 0% interest on outright and 6-month plans</li>
-              <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-gold-500" /> ATI Plus members save an extra 5% on every plan</li>
-              <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-gold-500" /> Automatic reminders 5 days before every due date</li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold-500" /> 0%
+                interest on outright and 6-month plans
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold-500" /> ATI
+                Plus members save an extra 5% on every plan
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-gold-500" />{" "}
+                Automatic reminders 5 days before every due date
+              </li>
             </ul>
-            <Button href="/payment-plans" variant="secondary" className="mt-8">See All Payment Plans</Button>
+            <Button href="/payment-plans" variant="secondary" className="mt-8">
+              See All Payment Plans
+            </Button>
           </div>
           <div className="rounded-3xl border border-navy-800/10 bg-white p-8">
-            <p className="text-xs uppercase tracking-wide text-ink-300">Example — 3 Bedroom Pent House</p>
-            <p className="mt-1 text-2xl font-bold text-navy-950">{formatNaira(2700000)}</p>
+            <p className="text-xs uppercase tracking-wide text-ink-300">
+              Example — 3 Bedroom Pent House
+            </p>
+            <p className="mt-1 text-2xl font-bold text-navy-950">
+              {formatNaira(2700000)}
+            </p>
             <div className="mt-6 grid grid-cols-3 gap-4 border-t border-navy-800/10 pt-6 text-sm">
               <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">12 Months</p>
+                <p className="text-xs uppercase tracking-wide text-ink-300">
+                  12 Months
+                </p>
                 <p className="font-semibold text-navy-950">9% interest</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">Monthly</p>
+                <p className="text-xs uppercase tracking-wide text-ink-300">
+                  Monthly
+                </p>
                 <p className="font-semibold text-navy-950">₦245,250</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-ink-300">ATI Plus Monthly</p>
+                <p className="text-xs uppercase tracking-wide text-ink-300">
+                  ATI Plus Monthly
+                </p>
                 <p className="font-semibold text-gold-600">₦232,988</p>
               </div>
             </div>
             <p className="mt-4 text-xs text-ink-500">
-              A separate ₦15,000 Land Application fee applies only when submitting a Land Application for this property.
+              A separate ₦15,000 Land Application fee applies only when
+              submitting a Land Application for this property.
             </p>
           </div>
         </div>
@@ -174,13 +253,18 @@ export default function HomePage() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-500/15 px-3 py-1 text-xs font-semibold text-gold-300">
                 <Star className="h-3.5 w-3.5" /> ATI Plus Membership
               </span>
-              <h2 className="mt-5 text-3xl font-bold text-white">Exclusive access. Priority everything.</h2>
+              <h2 className="mt-5 text-3xl font-bold text-white">
+                Exclusive access. Priority everything.
+              </h2>
               <p className="mt-3 text-navy-100/70">
-                ATI Plus members get early access to new releases, priority inspection scheduling, and dedicated
-                support  before properties reach the public, for a flat ₦20,000 annual subscription.
+                ATI Plus members get early access to new releases, priority
+                inspection scheduling, and dedicated support before properties
+                reach the public, for a flat ₦20,000 annual subscription.
               </p>
             </div>
-            <Button href="/ati-plus" size="lg">Become an ATI Plus Member</Button>
+            <Button href="/ati-plus" size="lg">
+              Become an ATI Plus Member
+            </Button>
           </div>
         </div>
       </section>
@@ -189,14 +273,21 @@ export default function HomePage() {
       <section className="bg-navy-900 py-20 sm:py-24">
         <div className="container-page flex flex-col items-center gap-6 text-center">
           <span className="gold-rule" />
-          <h2 className="max-w-xl text-3xl font-bold text-white">See it before you commit.</h2>
+          <h2 className="max-w-xl text-3xl font-bold text-white">
+            See it before you commit.
+          </h2>
           <p className="max-w-lg text-navy-100/70">
-            Book a guided inspection of any estate or property, or chat directly with an investment advisor on
-            WhatsApp — right now.
+            Book a guided inspection of any estate or property, or chat directly
+            with an investment advisor on WhatsApp — right now.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button href="/contact" size="lg">Book an Inspection</Button>
-            <WhatsAppButton message="Hello Adashè-to-Plot, I'd like to book a property inspection." size="lg" />
+            <Button href="/contact" size="lg">
+              Book an Inspection
+            </Button>
+            <WhatsAppButton
+              message="Hello Adashè-to-Plot, I'd like to book a property inspection."
+              size="lg"
+            />
           </div>
         </div>
       </section>
@@ -204,11 +295,16 @@ export default function HomePage() {
       {/* Final CTA */}
       <section className="container-page py-20 text-center sm:py-28">
         <span className="gold-rule mx-auto mb-6 block" />
-        <h2 className="text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">Your Future Starts With Land.</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">
+          Your Future Starts With Land.
+        </h2>
         <p className="mx-auto mt-4 max-w-xl text-ink-500">
-          Explore verified estates, compare payment plans, and take the first step toward property ownership today.
+          Explore verified estates, compare payment plans, and take the first
+          step toward property ownership today.
         </p>
-        <Button href="/estates" size="lg" className="mt-8">Explore Properties</Button>
+        <Button href="/estates" size="lg" className="mt-8">
+          Explore Properties
+        </Button>
       </section>
     </div>
   );

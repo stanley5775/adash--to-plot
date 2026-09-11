@@ -4,7 +4,9 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
 import { TanstackQueryProvider } from "../../context/TanstackQueryProvider";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { UserProvider } from "../../context/UserContext";
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -25,14 +27,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="flex min-h-screen flex-col antialiased">
-        <Navbar />
-        <main className="flex-1">
-          <TanstackQueryProvider>
-            <Toaster />
-            {children}
-          </TanstackQueryProvider>
-        </main>
-        <Footer />
+        {" "}
+        <UserProvider>
+          <Navbar />
+          <main className="flex-1">
+            <TanstackQueryProvider>
+              <Toaster />
+              {children}
+            </TanstackQueryProvider>
+          </main>
+          <Footer />{" "}
+        </UserProvider>
       </body>
     </html>
   );

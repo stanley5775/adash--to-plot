@@ -2,6 +2,7 @@ const api = process.env.NEXT_PUBLIC_BACKEND;
 export const getEstatesName = async () => {
   const res = await fetch(`${api}/admin/estate`, {
     method: "GET",
+    credentials: "include",
   });
 
   const result = await res.json();

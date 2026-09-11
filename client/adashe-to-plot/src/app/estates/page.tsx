@@ -52,7 +52,6 @@ function EstatesContent() {
 
   return (
     <div className="container-page py-16 sm:py-20">
-      <PaystackHookExample />
       <div className="max-w-2xl">
         <span className="gold-rule mb-4 block" />
         <h1 className="text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">

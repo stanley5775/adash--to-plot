@@ -439,7 +439,7 @@ export const atiMemberships = pgTable(
       }),
 
     status: atiMembershipStatusEnum("status").notNull().default("PENDING"),
-
+    ATI_membership: boolean("ATI_membership").notNull().default(false),
     startDate: timestamp("start_date", {
       withTimezone: true,
     }),

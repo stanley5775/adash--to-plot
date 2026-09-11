@@ -1,72 +1,51 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { CheckCircle2, KeyRound, LoaderCircle, Mail } from "lucide-react";
+import { KeyRound, LoaderCircle, Mail } from "lucide-react";
 
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { forgotPassword } from "@/services/password-reset.service";
+import { useForgotPassword } from "../../../hook/useForgotPassword";
+import toast from "react-hot-toast";
 
 type ForgotPasswordFormData = {
   email: string;
 };
 
-function ForgotPasswordForm() {
-  const [submitted, setSubmitted] = useState(false);
+export default function ForgotPasswordPage() {
+  const router = useRouter();
+
+  const { mutate: forgotPassword, isPending } = useForgotPassword();
 
   const {
     register,
     handleSubmit,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ForgotPasswordFormData>();
 
-  async function onSubmit(data: ForgotPasswordFormData) {
-    const result = await forgotPassword(data);
-
-    if (!result.success) {
-      setError("root", {
-        type: "server",
-        message:
-          result.error ?? "Unable to process your request. Please try again.",
-      });
-      return;
-    }
-
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return (
-      <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
-        <div className="w-full max-w-md rounded-3xl border border-navy-800/10 bg-white p-8 text-center sm:p-10">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-status-available/10">
-            <CheckCircle2 className="h-7 w-7 text-status-available" />
-          </div>
-
-          <h1 className="mt-5 text-2xl font-bold text-navy-950">
-            Check your email
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-ink-500">
-            If an account exists with that email address, we&apos;ve sent a
-            password reset link.
-          </p>
-
-          <p className="mt-3 text-xs leading-5 text-ink-400">
-            Check your inbox and spam folder.
-          </p>
-
-          <Link
-            href="/login"
-            className="mt-6 inline-flex font-semibold text-navy-800 hover:text-gold-600"
-          >
-            Back to Log In
-          </Link>
-        </div>
-      </div>
+  function onSubmit(formData: ForgotPasswordFormData) {
+    forgotPassword(
+      {
+        email: formData.email,
+      },
+      {
+        onSuccess: (data) => {
+          console.log(data, "forget");
+          toast.success(data.message);
+          router.push(
+            `/verify-otp?email=${encodeURIComponent(formData.email)}`,
+          );
+        },
+        onError: (error) => {
+          toast.error(error.message);
+          setError("root", {
+            type: "server",
+            message: error.message || "Unable to send verification code.",
+          });
+        },
+      },
     );
   }
 
@@ -83,16 +62,15 @@ function ForgotPasswordForm() {
             Forgot Password?
           </h1>
 
-          <p className="mt-2 text-sm leading-6 text-ink-500">
+          <p className="mt-2 text-sm text-ink-500">
             Enter the email address associated with your Adashè-to-Plot account
-            and we&apos;ll send you a secure password reset link.
+            and we&apos;ll send you a verification code.
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="mt-8 flex flex-col gap-4"
-        >
+          className="mt-8 flex flex-col gap-4">
           <Input
             label="Email address"
             id="forgot-email"
@@ -118,39 +96,21 @@ function ForgotPasswordForm() {
             </p>
           )}
 
-          <Button type="submit" disabled={isSubmitting} className="mt-2">
-            {isSubmitting ? (
+          <Button type="submit" disabled={isPending} className="mt-2">
+            {isPending ? (
               <>
                 <LoaderCircle className="h-4 w-4 animate-spin" />
-                Sending reset link…
+                Sending code…
               </>
             ) : (
               <>
                 <Mail className="h-4 w-4" />
-                Send Reset Link
+                Send Verification Code
               </>
             )}
           </Button>
         </form>
-
-        <p className="mt-6 text-center text-sm text-ink-500">
-          Remember your password?{" "}
-          <Link
-            href="/login"
-            className="font-semibold text-navy-800 hover:text-gold-600"
-          >
-            Log in
-          </Link>
-        </p>
       </div>
     </div>
-  );
-}
-
-export default function ForgotPasswordPage() {
-  return (
-    <Suspense>
-      <ForgotPasswordForm />
-    </Suspense>
   );
 }
