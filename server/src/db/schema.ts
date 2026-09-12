@@ -196,7 +196,7 @@ export const properties = pgTable(
       .references(() => estateNames.id, {
         onDelete: "restrict",
       }),
-
+    status: text("status").notNull().default("ACTIVE"),
     location: text("location").notNull(),
 
     city: text("city").notNull(),

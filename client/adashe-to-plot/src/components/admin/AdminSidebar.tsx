@@ -19,7 +19,7 @@ const items = [
   { href: "/admin", label: "Overview", icon: LayoutGrid },
   { href: "/admin/estates", label: "Estates", icon: Building2 },
   { href: "/admin/properties", label: "Properties", icon: Home },
-  { href: "/admin/payment-plans", label: "Payment Plans", icon: CreditCard },
+
   { href: "/admin/customers", label: "Users", icon: Users },
   { href: "/admin/ati-plus", label: "ATI Plus Members", icon: Star },
   { href: "/admin/applications", label: "Applications", icon: FileText },
