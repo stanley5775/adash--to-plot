@@ -25,9 +25,9 @@ export function Navbar() {
 
   const isAuthenticated = !!user;
   const isCustomer = user?.role === "CUSTOMER";
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUB_ADMIN";
+  const isAdmin = user?.role === "ADMIN";
 
-  if (pathname?.startsWith("/admin") || isAdmin) {
+  if (pathname?.startsWith("/admin")) {
     return null;
   }
   // Everyone can see all public links

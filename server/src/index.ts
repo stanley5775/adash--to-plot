@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 import admin from "./route/admin.routes";
 import users from "./route/users.routes";
 import ati from "./route/ati.members";
+import estate from "./route/estate.route";
 
 const app = new Hono();
 const allowedOrigins = [
@@ -20,7 +21,7 @@ app.use(
       if (allowedOrigins.includes(origin)) return origin;
       return "";
     },
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
@@ -39,6 +40,7 @@ app.route("/auth", authRoutes);
 app.route("/admin/estate", admin);
 app.route("/api/users", users);
 app.route("/api/ati", ati);
+app.route("/api/estate", estate);
 app.onError((err, c) => {
   return c.json(
     {

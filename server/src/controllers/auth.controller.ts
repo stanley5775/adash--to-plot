@@ -18,7 +18,7 @@ import {
 import { generateTokens } from "../utils/jwt";
 import { sessions } from "../db/schema";
 import { db } from "../db/db";
-import { setAuthCookies } from "../utils/cookies";
+import { clearAuthCookies, setAuthCookies } from "../utils/cookies";
 
 // REGISTER
 export const register = async (c: Context) => {
@@ -175,9 +175,7 @@ export const login = async (c: Context) => {
 
 // LOGOUT
 export const logout = async (c: Context) => {
-  deleteCookie(c, "accessToken", {
-    path: "/",
-  });
+  clearAuthCookies(c);
 
   return c.json({
     success: true,

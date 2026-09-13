@@ -213,3 +213,71 @@ export const toggleUserStatus = async (userId: string) => {
 
   return result.data;
 };
+
+export type ATIMember = {
+  membershipId: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  role: string;
+  isActive: boolean;
+  status: "ACTIVE" | "CANCELLED" | "EXPIRED";
+  ATI_membership: boolean;
+  startDate: string;
+  expiryDate: string;
+  createdAt: string;
+};
+
+export const getAllATIMembers = async (): Promise<ATIMember[]> => {
+  const res = await fetch(`${api}/admin/estate/ati-members`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const result = await res.json();
+
+  console.log("GET ATI MEMBERS STATUS:", res.status);
+  console.log("GET ATI MEMBERS RESPONSE:", result);
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to fetch ATI members");
+  }
+
+  return result.data;
+};
+
+export const toggleUserATI = async (userId: string) => {
+  const res = await fetch(`${api}/admin/estate/ati-members/${userId}/toggle`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  // /ati-members/:userId/toggle
+  const result = await res.json();
+
+  console.log("TOGGLE ATI STATUS:", res.status);
+  console.log("TOGGLE ATI RESPONSE:", result);
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to update ATI membership");
+  }
+
+  return result.data;
+};
+
+export const getAllApplicants = async () => {
+  const res = await fetch(`${api}/admin/estate/applicants`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const result = await res.json();
+
+  console.log("ALL APPLICANTS:", result);
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to fetch applicants");
+  }
+
+  return result.data;
+};

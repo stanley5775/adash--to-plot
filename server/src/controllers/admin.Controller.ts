@@ -8,6 +8,8 @@ import {
   PropertyPaymentPlan,
   estateNames,
   users,
+  atiMemberships,
+  applicationSchema,
 } from "../db/schema";
 import { createEstateSchema } from "../validators/estateV";
 import { uploadImage } from "../services/uploadImage";
@@ -15,6 +17,7 @@ import { and, eq, ne, desc } from "drizzle-orm";
 import { createPropertyPaymentPlansSchema } from "../validators/propertyPlan";
 import { createEstateNameSchema } from "../validators/createEstate";
 import { deleteImage } from "../utils/deleteImage";
+import STMPservice from "../services/email";
 
 export const createEstate = async (c: Context) => {
   try {
@@ -1352,6 +1355,289 @@ export const toggleUserStatus = async (c: Context) => {
         success: false,
         message: "Failed to update user status",
         error: "INTERNAL_SERVER_ERROR",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+export const getAllATIMembers = async (c: Context) => {
+  try {
+    const atiMembers = await db
+      .select({
+        membershipId: atiMemberships.id,
+
+        userId: users.id,
+        fullName: users.full_name,
+        email: users.email,
+        phoneNumber: users.phone_number,
+        role: users.role,
+        isActive: users.isActive,
+
+        status: atiMemberships.status,
+        ATI_membership: atiMemberships.ATI_membership,
+        startDate: atiMemberships.startDate,
+        expiryDate: atiMemberships.expiryDate,
+
+        createdAt: atiMemberships.createdAt,
+      })
+      .from(atiMemberships)
+      .innerJoin(users, eq(atiMemberships.userId, users.id))
+      .orderBy(desc(atiMemberships.createdAt));
+
+    return c.json(
+      {
+        success: true,
+        message: "ATI members fetched successfully",
+        data: atiMembers,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("GET ALL ATI MEMBERS ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch ATI members",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+export const toggleUserATI = async (c: Context) => {
+  try {
+    const userId = c.req.param("userId");
+
+    if (!userId) {
+      return c.json(
+        {
+          success: false,
+          message: "User ID is required",
+        },
+        400,
+      );
+    }
+
+    // Get user's latest ATI membership
+    const [membership] = await db
+      .select({
+        id: atiMemberships.id,
+        status: atiMemberships.status,
+        ATI_membership: atiMemberships.ATI_membership,
+        startDate: atiMemberships.startDate,
+        expiryDate: atiMemberships.expiryDate,
+      })
+      .from(atiMemberships)
+      .where(eq(atiMemberships.userId, userId))
+      .orderBy(desc(atiMemberships.createdAt))
+      .limit(1);
+
+    const now = new Date();
+
+    // Check current ATI status
+    const isCurrentlyATI =
+      membership?.status === "ACTIVE" &&
+      membership?.ATI_membership === true &&
+      !!membership?.expiryDate &&
+      membership.expiryDate > now;
+
+    // =========================
+    // TURN OFF ATI
+    // =========================
+    if (isCurrentlyATI && membership) {
+      const [updatedMembership] = await db
+        .update(atiMemberships)
+        .set({
+          status: "CANCELLED",
+          ATI_membership: false,
+          updatedAt: now,
+        })
+        .where(eq(atiMemberships.id, membership.id))
+        .returning();
+
+      return c.json(
+        {
+          success: true,
+          message: "ATI membership removed successfully",
+          data: updatedMembership,
+        },
+        200,
+      );
+    }
+
+    // =========================
+    // TURN ON ATI
+    // =========================
+    const expiryDate = new Date(now);
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+    // Existing membership record
+    if (membership) {
+      const [updatedMembership] = await db
+        .update(atiMemberships)
+        .set({
+          status: "ACTIVE",
+          ATI_membership: true,
+          startDate: now,
+          expiryDate,
+          updatedAt: now,
+        })
+        .where(eq(atiMemberships.id, membership.id))
+        .returning();
+
+      // GET USER
+
+      const [user] = await db
+        .select({
+          full_name: users.full_name,
+          email: users.email,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      const startDate = new Date();
+
+      // SEND ATI ACTIVATION EMAIL
+
+      if (user) {
+        await STMPservice.atiMembershipSuccess(
+          {
+            full_name: user.full_name,
+            email: user.email,
+          },
+          {
+            amount: 20_000,
+            startDate,
+            expiryDate,
+          },
+        );
+      }
+      return c.json(
+        {
+          success: true,
+          message: "ATI membership activated successfully",
+          data: updatedMembership,
+        },
+        200,
+      );
+    }
+
+    // No membership record exists
+    const [newMembership] = await db
+      .insert(atiMemberships)
+      .values({
+        userId,
+        status: "ACTIVE",
+        ATI_membership: true,
+        startDate: now,
+        expiryDate,
+      })
+      .returning();
+
+    return c.json(
+      {
+        success: true,
+        message: "ATI membership activated successfully",
+        data: newMembership,
+      },
+      201,
+    );
+  } catch (error) {
+    console.error("TOGGLE USER ATI ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to update ATI membership",
+      },
+      500,
+    );
+  }
+};
+
+export const getAllApplicants = async (c: Context) => {
+  try {
+    const applicants = await db
+      .select({
+        applicationId: applicationSchema.id,
+
+        userId: applicationSchema.userId,
+
+        surname: applicationSchema.surname,
+        firstName: applicationSchema.firstName,
+        middleName: applicationSchema.middleName,
+
+        sex: applicationSchema.sex,
+        dateOfBirth: applicationSchema.dateOfBirth,
+        nationality: applicationSchema.nationality,
+        stateOfOrigin: applicationSchema.stateOfOrigin,
+
+        residentialAddress: applicationSchema.residentialAddress,
+
+        phone1: applicationSchema.phone1,
+        phone2: applicationSchema.phone2,
+        email: applicationSchema.email,
+
+        occupation: applicationSchema.occupation,
+        officeAddress: applicationSchema.officeAddress,
+
+        nextOfKinName: applicationSchema.nextOfKinName,
+        nextOfKinRelationship: applicationSchema.nextOfKinRelationship,
+        nextOfKinPhone: applicationSchema.nextOfKinPhone,
+        nextOfKinAddress: applicationSchema.nextOfKinAddress,
+
+        isCorporate: applicationSchema.isCorporate,
+        businessName: applicationSchema.businessName,
+        rcNumber: applicationSchema.rcNumber,
+        companyAddress: applicationSchema.companyAddress,
+        natureOfBusiness: applicationSchema.natureOfBusiness,
+        companyPhone: applicationSchema.companyPhone,
+        companyEmail: applicationSchema.companyEmail,
+
+        referralSource: applicationSchema.referralSource,
+        referralOther: applicationSchema.referralOther,
+
+        estate: applicationSchema.estate,
+        plotSize: applicationSchema.plotSize,
+        paymentOption: applicationSchema.paymentOption,
+        acquisitionPurpose: applicationSchema.acquisitionPurpose,
+
+        status: applicationSchema.status,
+        isApplication: applicationSchema.isApplication,
+
+        createdAt: applicationSchema.createdAt,
+        updatedAt: applicationSchema.updatedAt,
+
+        user: {
+          fullName: users.full_name,
+          email: users.email,
+          phoneNumber: users.phone_number,
+          role: users.role,
+        },
+      })
+      .from(applicationSchema)
+      .innerJoin(users, eq(applicationSchema.userId, users.id))
+      .orderBy(desc(applicationSchema.createdAt));
+
+    return c.json(
+      {
+        success: true,
+        message: "Applicants fetched successfully",
+        data: applicants,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("GET ALL APPLICANTS ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch applicants",
         data: null,
       },
       500,

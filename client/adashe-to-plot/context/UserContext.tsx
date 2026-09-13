@@ -13,11 +13,12 @@ type User = {
   email: string;
   full_name: string;
   phone_number: string;
-  role: string;
+  role: "CUSTOMER" | "ADMIN";
 };
 
 type UserContextType = {
   user: User | null;
+  loading: boolean;
   setUser: (user: User | null) => void;
   logout: () => Promise<void>;
 };
@@ -26,23 +27,44 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const fetchMe = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND}/api/users/me`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
+        );
 
-    if (storedUser) {
-      setUserState(JSON.parse(storedUser));
-    }
+        if (!res.ok) {
+          setUserState(null);
+          return;
+        }
+
+        const result = await res.json();
+
+        if (result.success) {
+          setUserState(result.data);
+        } else {
+          setUserState(null);
+        }
+      } catch (error) {
+        console.error("FETCH ME ERROR:", error);
+        setUserState(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMe();
   }, []);
 
   const setUser = (user: User | null) => {
     setUserState(user);
-
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
-    }
   };
 
   const logout = async () => {
@@ -52,14 +74,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
         credentials: "include",
       });
     } finally {
-      // Always clear frontend auth state
       setUserState(null);
-      localStorage.removeItem("user");
     }
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser, logout }}>
+    <UserContext.Provider
+      value={{
+        user,
+        loading,
+        setUser,
+        logout,
+      }}>
       {children}
     </UserContext.Provider>
   );

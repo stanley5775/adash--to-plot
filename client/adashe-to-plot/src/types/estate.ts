@@ -9,25 +9,14 @@ export interface Landmark {
   distance: string;
 }
 
-export interface Estate {
-  estateNameId: string;
-  slug: string;
-  city: string;
-  name: string;
-  location: string;
+export type Estate = {
+  id: string;
+  estateName: string;
   state: string;
-  summary: string;
+  city: string;
+  location: string;
   description: string;
-  startingPrice: number;
+  startingPrice: string;
   totalPlots: number;
-  availablePlots: number;
-  reservedPlots: number;
-  soldPlots: number;
-  developmentStatus: DevelopmentStatus;
-  coverImage: string;
-  gallery: string[];
-  features: string[];
-  nearbyLandmarks: Landmark[];
-  propertyIds: string[];
-  paymentPlanMonths: number[];
-}
+  mainImage: string | null;
+};

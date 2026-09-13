@@ -856,3 +856,66 @@ export const paymentPlanInstallments = pgTable(
     ),
   ],
 );
+
+export const propertyPaymentVerificationStatusEnum = pgEnum(
+  "property_payment_verification_status",
+  ["PENDING", "APPROVED", "REJECTED"],
+);
+
+export const propertyPaymentVerifications = pgTable(
+  "property_payment_verifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    purchaseId: uuid("purchase_id")
+      .notNull()
+      .references(() => propertyPurchases.id, {
+        onDelete: "cascade",
+      }),
+
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "restrict",
+      }),
+
+    amount: integer("amount").notNull(),
+
+    receiptUrl: text("receipt_url").notNull(),
+
+    receiptPublicId: text("receipt_public_id"),
+
+    status: propertyPaymentVerificationStatusEnum("status")
+      .notNull()
+      .default("PENDING"),
+
+    rejectionReason: text("rejection_reason"),
+
+    reviewedBy: uuid("reviewed_by").references(() => users.id, {
+      onDelete: "restrict",
+    }),
+
+    reviewedAt: timestamp("reviewed_at", {
+      withTimezone: true,
+    }),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("property_payment_verifications_purchase_idx").on(table.purchaseId),
+
+    index("property_payment_verifications_user_idx").on(table.userId),
+
+    index("property_payment_verifications_status_idx").on(table.status),
+  ],
+);

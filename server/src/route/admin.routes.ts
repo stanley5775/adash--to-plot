@@ -12,6 +12,9 @@ import {
   updateEstateName,
   toggleUserStatus,
   getAllUsers,
+  getAllATIMembers,
+  toggleUserATI,
+  getAllApplicants,
 } from "../controllers/admin.Controller";
 
 import { requireAuth } from "../middleware/authMiddleware";
@@ -34,4 +37,7 @@ admin.put("/properties/:propertyId", updateProperty);
 admin.put("/estate-name/:estateId", updateEstateName);
 admin.put("/users/:userId/status", toggleUserStatus);
 admin.get("/users", getAllUsers);
+admin.get("/ati-members", getAllATIMembers);
+admin.patch("/ati-members/:userId/toggle", toggleUserATI);
+admin.get("/applicants", getAllApplicants);
 export default admin;

@@ -9,6 +9,9 @@ import {
   createPropertyPaymentPlans,
   getAllUsers,
   toggleUserStatus,
+  toggleUserATI,
+  getAllATIMembers,
+  getAllApplicants,
 } from "../api/admin";
 import { useQuery } from "@tanstack/react-query";
 
@@ -140,5 +143,43 @@ export const useToggleUserStatus = () => {
         queryKey: ["admin-users"],
       });
     },
+  });
+};
+
+export const useATIMembers = () => {
+  return useQuery({
+    queryKey: ["ati-members"],
+    queryFn: getAllATIMembers,
+  });
+};
+
+export const useToggleUserATI = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: toggleUserATI,
+
+    onSuccess: (data) => {
+      console.log("ATI TOGGLE SUCCESS:", data);
+
+      queryClient.invalidateQueries({
+        queryKey: ["ati-members"],
+      });
+    },
+
+    onError: (error) => {
+      console.error("ATI TOGGLE ERROR:", error);
+    },
+
+    onSettled: () => {
+      console.log("ATI TOGGLE FINISHED");
+    },
+  });
+};
+
+export const useGetAllApplicants = () => {
+  return useQuery({
+    queryKey: ["applicants"],
+    queryFn: getAllApplicants,
   });
 };

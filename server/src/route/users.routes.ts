@@ -1,18 +1,23 @@
 import { Hono } from "hono";
 import {
-  getAllProperties,
-  getPropertyById,
   createApplication,
   verifyApplicationPayment,
   checkApplication,
+  getMe,
 } from "../controllers/users";
 import { requireAuth } from "../middleware/authMiddleware";
+import { authorize } from "../middleware/rolemiddleware";
 
 const users = new Hono();
-users.get("/properties", requireAuth, getAllProperties);
-users.get("/properties/:propertyId", requireAuth, getPropertyById);
-users.post("/create_application", requireAuth, createApplication);
-users.post("/verify", requireAuth, verifyApplicationPayment);
-users.get("/check-application", requireAuth, checkApplication);
 
+users.use("*", requireAuth);
+
+users.post("/create_application", authorize("CUSTOMER"), createApplication);
+
+users.post("/verify", authorize("CUSTOMER"), verifyApplicationPayment);
+
+users.get("/check-application", authorize("CUSTOMER"), checkApplication);
+
+// CUSTOMER + ADMIN
+users.get("/me", authorize("CUSTOMER", "ADMIN"), getMe);
 export default users;

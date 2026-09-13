@@ -34,12 +34,7 @@ export const estates: Estate[] = [
       "Engineered drainage system",
       "Fenced estate perimeter",
     ],
-    landmarks: [
-      { name: "Kuje-Gwagwalada Expressway", distance: "4 minutes" },
-      { name: "Kuje Central Market", distance: "10 minutes" },
-      { name: "Nizamiye Turkish Hospital", distance: "18 minutes" },
-      { name: "Kuje General Hospital", distance: "12 minutes" },
-    ],
+
     propertyIds: [
       "thrive-2bed-terrace",
       "thrive-3bed-terrace",
@@ -78,11 +73,7 @@ export const estates: Estate[] = [
       "Graded internal access roads",
       "Estate security post",
     ],
-    landmarks: [
-      { name: "Kuje-Gwagwalada Expressway", distance: "7 minutes" },
-      { name: "Kuje Central Market", distance: "13 minutes" },
-      { name: "Kuje General Hospital", distance: "15 minutes" },
-    ],
+
     propertyIds: ["amio-2bed-bungalow", "amio-3bed-bungalow"],
     paymentPlanMonths: [0, 6],
   },

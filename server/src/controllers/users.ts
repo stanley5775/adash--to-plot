@@ -18,192 +18,6 @@ import {
 } from "../validators/createLandApplicationSchema ";
 import { env } from "../env";
 import STMPservice from "../services/email";
-export const getAllProperties = async (c: Context) => {
-  try {
-    const allProperties = await db
-      .select({
-        property: properties,
-        estate: {
-          id: estateNames.id,
-          name: estateNames.name,
-        },
-        images: propertiesImage,
-        paymentPlan: PropertyPaymentPlan,
-      })
-      .from(properties)
-      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
-      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
-      .leftJoin(
-        PropertyPaymentPlan,
-        eq(PropertyPaymentPlan.propertyId, properties.id),
-      );
-
-    // GROUP EVERYTHING BY PROPERTY
-    const groupedProperties = allProperties.reduce(
-      (acc, row) => {
-        const propertyId = row.property.id;
-
-        if (!acc[propertyId]) {
-          acc[propertyId] = {
-            ...row.property,
-
-            estate: row.estate,
-
-            images: row.images
-              ? {
-                  mainImgUrl: row.images.mainImgUrl,
-                  mainImagePublicId: row.images.mainImagePublicId,
-
-                  image1Url: row.images.image1Url,
-                  image1PublicId: row.images.image1PublicId,
-
-                  image2Url: row.images.image2Url,
-                  image2PublicId: row.images.image2PublicId,
-
-                  image3Url: row.images.image3Url,
-                  image3PublicId: row.images.image3PublicId,
-
-                  image4Url: row.images.image4Url,
-                  image4PublicId: row.images.image4PublicId,
-                }
-              : null,
-
-            paymentPlans: [],
-          };
-        }
-
-        // ADD PAYMENT PLAN
-        if (row.paymentPlan) {
-          acc[propertyId].paymentPlans.push(row.paymentPlan);
-        }
-
-        return acc;
-      },
-      {} as Record<string, any>,
-    );
-
-    return c.json(
-      {
-        success: true,
-        message: "Properties fetched successfully",
-        data: Object.values(groupedProperties),
-      },
-      200,
-    );
-  } catch (error) {
-    console.error("GET ALL PROPERTIES ERROR:", error);
-
-    return c.json(
-      {
-        success: false,
-        message: "Failed to fetch properties",
-        error: "INTERNAL_SERVER_ERROR",
-        data: null,
-      },
-      500,
-    );
-  }
-};
-
-export const getPropertyById = async (c: Context) => {
-  try {
-    const propertyId = c.req.param("propertyId");
-
-    if (!propertyId) {
-      return c.json(
-        {
-          success: false,
-          message: "Property ID is required",
-          data: null,
-        },
-        400,
-      );
-    }
-
-    // GET PROPERTY
-    const [property] = await db
-      .select({
-        property: properties,
-
-        estate: {
-          id: estateNames.id,
-          name: estateNames.name,
-        },
-
-        images: propertiesImage,
-      })
-      .from(properties)
-      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
-      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
-      .where(eq(properties.id, propertyId))
-      .limit(1);
-
-    if (!property) {
-      return c.json(
-        {
-          success: false,
-          message: "Property not found",
-          data: null,
-        },
-        404,
-      );
-    }
-
-    // GET PAYMENT PLANS
-    const paymentPlans = await db
-      .select()
-      .from(PropertyPaymentPlan)
-      .where(eq(PropertyPaymentPlan.propertyId, propertyId));
-
-    return c.json(
-      {
-        success: true,
-        message: "Property fetched successfully",
-
-        data: {
-          ...property.property,
-
-          estate: property.estate,
-
-          images: property.images
-            ? {
-                mainImgUrl: property.images.mainImgUrl,
-                mainImagePublicId: property.images.mainImagePublicId,
-
-                image1Url: property.images.image1Url,
-                image1PublicId: property.images.image1PublicId,
-
-                image2Url: property.images.image2Url,
-                image2PublicId: property.images.image2PublicId,
-
-                image3Url: property.images.image3Url,
-                image3PublicId: property.images.image3PublicId,
-
-                image4Url: property.images.image4Url,
-                image4PublicId: property.images.image4PublicId,
-              }
-            : null,
-
-          paymentPlans,
-        },
-      },
-      200,
-    );
-  } catch (error) {
-    console.error("GET PROPERTY BY ID ERROR:", error);
-
-    return c.json(
-      {
-        success: false,
-        message: "Failed to fetch property",
-        error: "INTERNAL_SERVER_ERROR",
-        data: null,
-      },
-      500,
-    );
-  }
-};
-
 export const verifyApplicationPayment = async (c: Context) => {
   try {
     // 1. Get reference sent by frontend
@@ -654,6 +468,67 @@ export const checkApplication = async (c: Context) => {
       {
         success: false,
         message: "Internal server error",
+      },
+      500,
+    );
+  }
+};
+
+export const getMe = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const userId = authUser.id;
+
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        full_name: users.full_name,
+        phone_number: users.phone_number,
+        role: users.role,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          message: "User not found",
+          data: null,
+        },
+        404,
+      );
+    }
+
+    return c.json(
+      {
+        success: true,
+        message: "User fetched successfully",
+        data: user,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("GET ME ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch user",
+        data: null,
       },
       500,
     );
