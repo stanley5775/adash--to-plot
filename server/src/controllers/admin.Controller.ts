@@ -186,65 +186,120 @@ export const createEstate = async (c: Context) => {
 
 export const createEstateName = async (c: Context) => {
   try {
-    const body = await c.req.json();
+    const formData = await c.req.formData();
+
+    const body = {
+      name: formData.get("name")?.toString().trim() ?? "",
+      description: formData.get("description")?.toString().trim() ?? "",
+      accountName: formData.get("accountName")?.toString().trim() ?? "",
+      accountNumber: formData.get("accountNumber")?.toString().trim() ?? "",
+      city: formData.get("city")?.toString().trim() ?? "",
+      state: formData.get("state")?.toString().trim() ?? "",
+      startingPrice: formData.get("startingPrice")?.toString().trim() ?? "",
+      bankName: formData.get("bankName")?.toString().trim() ?? "",
+    };
+
     const result = createEstateNameSchema.safeParse(body);
+
     if (!result.success) {
       return c.json(
         {
           success: false,
-          message: "Invalid estate information",
-          errors: result.error.flatten(),
+          message: "Validation failed",
+          errors: result.error.issues.map((issue) => issue.message),
+        },
+        422,
+      );
+    }
+
+    const data = result.data;
+
+    // GET ESTATE IMAGE
+    const mainImage = formData.get("mainImage");
+
+    if (!(mainImage instanceof File) || mainImage.size === 0) {
+      return c.json(
+        {
+          success: false,
+          message: "Estate main image is required",
           data: null,
         },
         422,
       );
     }
-    const { name, accountName, accountNumber, bankName } = result.data;
-    const existingEstate = await db
-      .select({ id: estateNames.id, name: estateNames.name })
+
+    // CHECK IF ESTATE NAME ALREADY EXISTS
+    const [existingEstate] = await db
+      .select({
+        id: estateNames.id,
+        name: estateNames.name,
+      })
       .from(estateNames)
-      .where(eq(estateNames.name, name))
+      .where(eq(estateNames.name, data.name))
       .limit(1);
-    if (existingEstate.length > 0) {
+
+    if (existingEstate) {
       return c.json(
         {
           success: false,
           message: "Estate name already exists",
-          data: existingEstate[0],
+          data: existingEstate,
         },
         409,
       );
     }
+
+    // UPLOAD ESTATE MAIN IMAGE TO CLOUDINARY
+    const mainImageData = await uploadImage(mainImage);
+
+    // CREATE ESTATE NAME
     const [estate] = await db
       .insert(estateNames)
       .values({
-        name,
-        accountName,
-        accountNumber,
-        bankName,
+        name: data.name,
+        description: data.description,
+        city: data.city,
+        state: data.state,
+        startingPrice: data.startingPrice,
+
+        // CLOUDINARY IMAGE
+        mainImageUrl: mainImageData.url,
+        mainImagePublicId: mainImageData.publicId,
+
+        accountName: data.accountName,
+        accountNumber: data.accountNumber,
+        bankName: data.bankName,
       })
       .returning({
         id: estateNames.id,
-        bankName: estateNames.bankName,
         name: estateNames.name,
+        description: estateNames.description,
+
+        mainImageUrl: estateNames.mainImageUrl,
+        mainImagePublicId: estateNames.mainImagePublicId,
+
         accountName: estateNames.accountName,
         accountNumber: estateNames.accountNumber,
+        bankName: estateNames.bankName,
+
         createdAt: estateNames.createdAt,
       });
+
     return c.json(
       {
         success: true,
-        message: "Estate name created successfully",
+        message: "Estate created successfully",
         data: estate,
       },
       201,
     );
   } catch (error) {
     console.error("CREATE ESTATE NAME ERROR:", error);
+
     return c.json(
       {
         success: false,
-        message: "Failed to create estate name",
+        message: "Failed to create estate",
         error: "INTERNAL_SERVER_ERROR",
         data: null,
       },
@@ -259,6 +314,15 @@ export const getAllEstates = async (c: Context) => {
       .select({
         id: estateNames.id,
         name: estateNames.name,
+        description: estateNames.description,
+
+        city: estateNames.city,
+        state: estateNames.state,
+        startingPrice: estateNames.startingPrice,
+
+        mainImageUrl: estateNames.mainImageUrl,
+        mainImagePublicId: estateNames.mainImagePublicId,
+
         accountName: estateNames.accountName,
         accountNumber: estateNames.accountNumber,
         bankName: estateNames.bankName,
@@ -1155,7 +1219,19 @@ export const updateEstateName = async (c: Context) => {
       );
     }
 
-    const body = await c.req.json();
+    const formData = await c.req.formData();
+
+    // =========================
+    // ESTATE DATA
+    // =========================
+
+    const body = {
+      name: formData.get("name")?.toString().trim() ?? "",
+      description: formData.get("description")?.toString().trim() ?? "",
+      accountName: formData.get("accountName")?.toString().trim() ?? "",
+      accountNumber: formData.get("accountNumber")?.toString().trim() ?? "",
+      bankName: formData.get("bankName")?.toString().trim() ?? "",
+    };
 
     const result = createEstateNameSchema.safeParse(body);
 
@@ -1173,11 +1249,16 @@ export const updateEstateName = async (c: Context) => {
 
     const data = result.data;
 
-    // Check estate exists
+    // =========================
+    // CHECK ESTATE
+    // =========================
+
     const [existingEstate] = await db
       .select({
         id: estateNames.id,
         name: estateNames.name,
+        mainImageUrl: estateNames.mainImageUrl,
+        mainImagePublicId: estateNames.mainImagePublicId,
       })
       .from(estateNames)
       .where(eq(estateNames.id, estateId))
@@ -1194,7 +1275,10 @@ export const updateEstateName = async (c: Context) => {
       );
     }
 
-    // Check if another estate already has this name
+    // =========================
+    // CHECK DUPLICATE NAME
+    // =========================
+
     const [duplicateName] = await db
       .select({
         id: estateNames.id,
@@ -1214,21 +1298,87 @@ export const updateEstateName = async (c: Context) => {
       );
     }
 
+    // =========================
+    // REMOVE MAIN IMAGE
+    // =========================
+
+    const removeImageRaw = formData.get("removeImage");
+
+    const removeImage = removeImageRaw?.toString().toLowerCase() === "true";
+
+    if (removeImage && existingEstate.mainImagePublicId) {
+      await deleteImage(existingEstate.mainImagePublicId);
+
+      await db
+        .update(estateNames)
+        .set({
+          mainImageUrl: null,
+          mainImagePublicId: null,
+        })
+        .where(eq(estateNames.id, estateId));
+    }
+
+    // =========================
+    // REPLACE MAIN IMAGE
+    // =========================
+
+    const mainImage = formData.get("mainImage");
+
+    let uploadedImage: {
+      url: string;
+      publicId: string;
+    } | null = null;
+
+    if (mainImage instanceof File && mainImage.size > 0) {
+      // Delete old Cloudinary image
+      if (existingEstate.mainImagePublicId) {
+        await deleteImage(existingEstate.mainImagePublicId);
+      }
+
+      // Upload new image
+      uploadedImage = await uploadImage(mainImage);
+    }
+
+    // =========================
+    // UPDATE ESTATE
+    // =========================
+
     const [updatedEstate] = await db
       .update(estateNames)
       .set({
         name: data.name,
+        description: data.description,
         accountName: data.accountName,
         accountNumber: data.accountNumber,
         bankName: data.bankName,
+
+        ...(uploadedImage && {
+          mainImageUrl: uploadedImage.url,
+          mainImagePublicId: uploadedImage.publicId,
+        }),
+
+        ...(removeImage && {
+          mainImageUrl: null,
+          mainImagePublicId: null,
+        }),
       })
       .where(eq(estateNames.id, estateId))
-      .returning();
+      .returning({
+        id: estateNames.id,
+        name: estateNames.name,
+        description: estateNames.description,
+        mainImageUrl: estateNames.mainImageUrl,
+        mainImagePublicId: estateNames.mainImagePublicId,
+        accountName: estateNames.accountName,
+        accountNumber: estateNames.accountNumber,
+        bankName: estateNames.bankName,
+        createdAt: estateNames.createdAt,
+      });
 
     return c.json(
       {
         success: true,
-        message: "Estate name updated successfully",
+        message: "Estate updated successfully",
         data: updatedEstate,
       },
       200,

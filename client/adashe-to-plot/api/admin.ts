@@ -1,15 +1,6 @@
 const api = process.env.NEXT_PUBLIC_BACKEND;
 
-export type Estate = {
-  id: string;
-  name: string;
-  accountName: string;
-  accountNumber: string;
-  bankName: string;
-  createdAt: string;
-};
-
-export const getEstates = async (): Promise<Estate[]> => {
+export const getEstates = async (): Promise<any[]> => {
   const res = await fetch(`${api}/admin/estate`, {
     method: "GET",
     credentials: "include",
@@ -26,17 +17,12 @@ export const getEstates = async (): Promise<Estate[]> => {
   return result.data;
 };
 
-export const createEstateName = async (data: {
-  name: string;
-  accountName: string;
-  accountNumber: string;
-  bankName: string;
-}) => {
+export const createEstateName = async (formData: FormData) => {
   const res = await fetch(`${api}/admin/estate/create-estatename`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+
     credentials: "include",
-    body: JSON.stringify(data),
+    body: formData,
   });
   const result = await res.json();
   console.log(result, "from create estate");
@@ -128,20 +114,12 @@ export const updateProperty = async (
 
 export const updateEstateName = async (
   estateId: string,
-  data: {
-    name: string;
-    accountName: string;
-    accountNumber: string;
-    bankName: string;
-  },
+  formData: FormData,
 ) => {
   const res = await fetch(`${api}/admin/estate/estate-name/${estateId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
     credentials: "include",
-    body: JSON.stringify(data),
+    body: formData,
   });
 
   const result = await res.json();

@@ -18,6 +18,7 @@ export const getAllProperties = async (c: Context) => {
         estateName: estateNames.name,
         state: properties.state,
         city: properties.city,
+        status: properties.status,
         location: properties.location,
         description: properties.description,
         startingPrice: properties.startingPrice,
@@ -190,6 +191,127 @@ export const getPropertyFilters = async (c: Context) => {
       {
         success: false,
         message: "Failed to fetch property filters",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+// export const getEstateWithProperties = async (c: Context) => {
+//   try {
+//     const estateId = c.req.param("estateId");
+
+//     if (!estateId) {
+//       return c.json(
+//         {
+//           success: false,
+//           message: "Estate ID is required",
+//           data: null,
+//         },
+//         400,
+//       );
+//     }
+//     const estate = await db
+//       .select({
+//         id: estateNames.id,
+//         name: estateNames.name,
+//       })
+//       .from(estateNames)
+//       .where(eq(estateNames.id, estateId))
+//       .limit(1);
+
+//     if (!estate.length) {
+//       return c.json(
+//         {
+//           success: false,
+//           message: "Estate not found",
+//           data: null,
+//         },
+//         404,
+//       );
+//     }
+
+//     const propertiesList = await db
+//       .select({
+//         id: properties.id,
+//         estateId: properties.estateId,
+//         state: properties.state,
+//         city: properties.city,
+//         location: properties.location,
+//         description: properties.description,
+//         startingPrice: properties.startingPrice,
+//         totalPlots: properties.totalPlots,
+//         status: properties.status,
+//         mainImage: propertiesImage.mainImgUrl,
+//       })
+//       .from(properties)
+//       .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
+//       .where(eq(properties.estateId, estateId));
+
+//     return c.json(
+//       {
+//         success: true,
+//         message: "Estate fetched successfully",
+//         data: {
+//           estate: estate[0],
+//           properties: propertiesList,
+//         },
+//       },
+//       200,
+//     );
+//   } catch (error) {
+//     console.error("GET ESTATE WITH PROPERTIES ERROR:", error);
+
+//     return c.json(
+//       {
+//         success: false,
+//         message: "Failed to fetch estate",
+//         error: "INTERNAL_SERVER_ERROR",
+//         data: null,
+//       },
+//       500,
+//     );
+//   }
+// };
+export const getAllEstates = async (c: Context) => {
+  try {
+    const estates = await db
+      .select({
+        estateId: estateNames.id,
+        estateName: estateNames.name,
+        description: estateNames.description,
+
+        city: estateNames.city,
+        state: estateNames.state,
+        startingPrice: estateNames.startingPrice,
+
+        mainImage: estateNames.mainImageUrl,
+        mainImagePublicId: estateNames.mainImagePublicId,
+
+        accountName: estateNames.accountName,
+        accountNumber: estateNames.accountNumber,
+        bankName: estateNames.bankName,
+        createdAt: estateNames.createdAt,
+      })
+      .from(estateNames);
+
+    return c.json(
+      {
+        success: true,
+        message: "Estates fetched successfully",
+        data: estates,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("GET ALL ESTATES ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch estates",
+        error: "INTERNAL_SERVER_ERROR",
         data: null,
       },
       500,

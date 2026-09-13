@@ -1,0 +1,169 @@
+"use client";
+
+import { MapPin, CheckCircle2 } from "lucide-react";
+
+import type { Estate } from "@/types/estate";
+import { useGetPropertiesUsersById } from "../../../hook/estates";
+
+import { EstateGallery } from "@/components/estate/EstateGallery";
+import { EstateStats } from "@/components/estate/EstateStats";
+import { PropertyGrid } from "@/components/property/PropertyGrid";
+import { PaymentPlansSection } from "@/components/property/PaymentPlansSection";
+import { BookInspectionButton } from "@/components/booking/BookInspectionButton";
+import { WhatsAppButton } from "@/components/booking/WhatsAppButton";
+import { Badge } from "@/components/ui/Badge";
+
+export default function EstateDetails({ estate }: { estate: Estate }) {
+  const { data, isLoading } = useGetPropertiesUsersById(estate.id);
+
+  const property = data?.data ?? estate;
+
+  if (isLoading) {
+    return (
+      <div className="container-page py-10 sm:py-14">
+        <div className="animate-pulse">
+          <div className="h-6 w-32 rounded bg-navy-800/10" />
+          <div className="mt-4 h-10 w-80 rounded bg-navy-800/10" />
+          <div className="mt-8 h-[400px] rounded-3xl bg-navy-800/10" />
+        </div>
+      </div>
+    );
+  }
+
+  const estateName = property.estate?.name ?? estate.estateName;
+
+  const gallery = [
+    property.images?.mainImgUrl,
+    property.images?.image1Url,
+    property.images?.image2Url,
+    property.images?.image3Url,
+    property.images?.image4Url,
+  ].filter(Boolean);
+
+  const paymentPlans = property.paymentPlans ?? [];
+
+  return (
+    <div>
+      <div className="container-page py-10 sm:py-14">
+        {/* HEADER */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <Badge tone={property.status === "ACTIVE" ? "gold" : "info"}>
+              {property.status === "ACTIVE" ? "Available" : "Coming Soon"}
+            </Badge>
+
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-navy-950 sm:text-4xl">
+              {estateName}
+            </h1>
+
+            <p className="mt-2 flex items-center gap-1.5 text-ink-500">
+              <MapPin className="h-4 w-4" />
+              {property.location}, {property.state}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {/* <BookInspectionButton /> */}
+
+            <WhatsAppButton
+              message={`Hello Adashè-to-Plot, I'm interested in ${estateName} and would like more information.`}
+            />
+          </div>
+        </div>
+
+        {/* GALLERY — SAME OLD UI */}
+        <div className="mt-8">
+          <EstateGallery images={gallery} name={estateName} />
+        </div>
+
+        {/* STATS — SAME OLD UI */}
+        <div className="mt-10">
+          <EstateStats estate={property} />
+        </div>
+
+        {/* ABOUT — SAME OLD UI */}
+        <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-bold text-navy-950">
+              About {estateName}
+            </h2>
+
+            <p className="mt-4 leading-relaxed text-ink-700">
+              {property.description}
+            </p>
+
+            <h3 className="mt-10 text-lg font-bold text-navy-950">
+              Estate Features
+            </h3>
+
+            <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {(property.features ?? []).map((feature: string) => (
+                <li
+                  key={feature}
+                  className="flex items-center gap-2 text-sm text-ink-700">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-600" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* AVAILABLE PLOTS — SAME OLD UI */}
+        <div id="plots" className="mt-16 scroll-mt-24">
+          <h2 className="text-xl font-bold text-navy-950">Available Plots</h2>
+
+          <p className="mt-2 text-ink-500">
+            {property.totalPlots} plots currently offered at {estateName}.
+          </p>
+
+          <div className="mt-6">
+            <PropertyGrid properties={[property]} estateName={estateName} />
+          </div>
+        </div>
+
+        {/* PAYMENT PLANS — SAME OLD UI */}
+        {paymentPlans.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-xl font-bold text-navy-950">
+              Payment Plans at {estateName}
+            </h2>
+
+            <p className="mt-2 text-ink-500">
+              Choose a payment plan for this property.
+            </p>
+
+            <div className="mt-6">
+              <PaymentPlansSection
+                price={Number(property.startingPrice)}
+                rates={paymentPlans}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* CTA — SAME OLD UI */}
+        <div className="mt-16 flex flex-col items-center gap-4 rounded-3xl bg-navy-950 px-8 py-12 text-center">
+          <h2 className="text-2xl font-bold text-white">
+            Ready to see {estateName} in person?
+          </h2>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            {/* <BookInspectionButton size="lg" /> */}
+
+            <WhatsAppButton
+              message={`Hello Adashè-to-Plot, I'm interested in ${estateName} and would like more information.`}
+              size="lg"
+            />
+
+            <a
+              href="#plots"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3.5 text-sm font-semibold text-white hover:border-white/40">
+              View Available Plots
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

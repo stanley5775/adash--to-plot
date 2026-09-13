@@ -89,16 +89,11 @@ export const useUpdateEstateName = () => {
   return useMutation({
     mutationFn: ({
       estateId,
-      data,
+      formData,
     }: {
       estateId: string;
-      data: {
-        name: string;
-        accountName: string;
-        accountNumber: string;
-        bankName: string;
-      };
-    }) => updateEstateName(estateId, data),
+      formData: FormData;
+    }) => updateEstateName(estateId, formData),
 
     onSuccess: () => {
       queryClient.invalidateQueries({

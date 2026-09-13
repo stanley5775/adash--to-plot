@@ -19,4 +19,5 @@ export type Estate = {
   startingPrice: string;
   totalPlots: number;
   mainImage: string | null;
+  status: "ACTIVE" | "INACTIVE";
 };

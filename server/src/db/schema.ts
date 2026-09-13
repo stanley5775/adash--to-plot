@@ -11,6 +11,7 @@ import {
   numeric,
   unique,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 // ENUMS;
@@ -177,7 +178,17 @@ export const passwordResetOtps = pgTable(
 );
 export const estateNames = pgTable("estate_names", {
   id: uuid("id").defaultRandom().notNull().unique(),
+  description: text("description"),
 
+  mainImageUrl: text("main_image_url"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+
+  startingPrice: numeric("starting_price", {
+    precision: 15,
+    scale: 2,
+  }),
+  mainImagePublicId: text("main_image_public_id"),
   name: text("name").notNull().unique(),
   accountName: text("account_name").notNull(),
   accountNumber: text("account_number").notNull(),

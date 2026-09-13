@@ -8,7 +8,7 @@ import { formatNaira } from "@/lib/payment";
 export function EstateCard({ estate }: { estate: Estate }) {
   return (
     <Link
-      href={`/estates/${estate.id}`}
+      href={`/properties/${estate.id}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-navy-800/10 bg-white transition-shadow hover:shadow-[0_24px_48px_-24px_rgba(10,25,48,0.35)]">
       <div className="relative h-56 w-full overflow-hidden">
         {estate.mainImage ? (
@@ -24,10 +24,6 @@ export function EstateCard({ estate }: { estate: Estate }) {
             No image available
           </div>
         )}
-
-        <div className="absolute left-4 top-4">
-          <Badge tone="info">Available</Badge>
-        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-6">
@@ -38,7 +34,7 @@ export function EstateCard({ estate }: { estate: Estate }) {
 
           <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-500">
             <MapPin className="h-3.5 w-3.5" />
-            {estate.location}, {estate.city}, {estate.state}
+            {estate.city}, {estate.state}
           </p>
         </div>
 

@@ -8,6 +8,12 @@ import { DataTable, type Column } from "@/components/admin/DataTable";
 export type Estate = {
   id: string;
   name: string;
+  description: string | null;
+  mainImageUrl: string | null;
+  mainImagePublicId: string | null;
+  city: string | null;
+  state: string | null;
+  startingPrice: string | null;
   accountName: string;
   accountNumber: string;
   bankName: string;

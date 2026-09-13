@@ -9,14 +9,21 @@ import toast from "react-hot-toast";
 
 type EstateFormValues = {
   name: string;
+  description: string;
+  city: string;
+  state: string;
+  startingPrice: string;
   accountName: string;
   accountNumber: string;
   bankName: string;
+  mainImage: FileList;
 };
+
 type EstateFormProps = {
   onSuccess?: () => void;
   onCancel?: () => void;
 };
+
 export function EstateForm({ onSuccess, onCancel }: EstateFormProps) {
   const {
     register,
@@ -28,9 +35,24 @@ export function EstateForm({ onSuccess, onCancel }: EstateFormProps) {
   const createEstate = useCreateEstateName();
 
   function onSubmit(data: EstateFormValues) {
-    createEstate.mutate(data, {
+    const formData = new FormData();
+
+    formData.append("name", data.name);
+    formData.append("description", data.description);
+    formData.append("city", data.city);
+    formData.append("state", data.state);
+    formData.append("startingPrice", data.startingPrice);
+    formData.append("accountName", data.accountName);
+    formData.append("accountNumber", data.accountNumber);
+    formData.append("bankName", data.bankName);
+
+    if (data.mainImage?.[0]) {
+      formData.append("mainImage", data.mainImage[0]);
+    }
+
+    createEstate.mutate(formData, {
       onSuccess: () => {
-        toast.success("estate created sucessfully");
+        toast.success("Estate created successfully");
         reset();
         onSuccess?.();
       },
@@ -61,6 +83,128 @@ export function EstateForm({ onSuccess, onCancel }: EstateFormProps) {
 
         {errors.name && (
           <p className="mt-1 text-sm text-status-sold">{errors.name.message}</p>
+        )}
+      </div>
+
+      {/* Description */}
+      <div>
+        <label
+          htmlFor="estate-description"
+          className="mb-1 block text-sm font-medium text-navy-900">
+          Estate description
+        </label>
+
+        <textarea
+          id="estate-description"
+          placeholder="Describe the estate..."
+          rows={4}
+          className="w-full resize-none rounded-xl border border-navy-800/10 bg-white px-4 py-3 text-sm outline-none focus:border-navy-800"
+          {...register("description", {
+            required: "Estate description is required",
+            minLength: {
+              value: 10,
+              message: "Description must be at least 10 characters",
+            },
+            validate: (value) =>
+              value.trim().length >= 10 ||
+              "Estate description must be at least 10 characters",
+          })}
+        />
+
+        {errors.description && (
+          <p className="mt-1 text-sm text-status-sold">
+            {errors.description.message}
+          </p>
+        )}
+      </div>
+
+      {/* City */}
+      <div>
+        <Input
+          label="City"
+          id="estate-city"
+          placeholder="e.g. Kuje"
+          {...register("city", {
+            required: "City is required",
+            minLength: {
+              value: 2,
+              message: "City must be at least 2 characters",
+            },
+          })}
+        />
+
+        {errors.city && (
+          <p className="mt-1 text-sm text-status-sold">{errors.city.message}</p>
+        )}
+      </div>
+
+      {/* State */}
+      <div>
+        <Input
+          label="State"
+          id="estate-state"
+          placeholder="e.g. FCT"
+          {...register("state", {
+            required: "State is required",
+            minLength: {
+              value: 2,
+              message: "State must be at least 2 characters",
+            },
+          })}
+        />
+
+        {errors.state && (
+          <p className="mt-1 text-sm text-status-sold">
+            {errors.state.message}
+          </p>
+        )}
+      </div>
+
+      {/* Starting Price */}
+      <div>
+        <Input
+          label="Starting price"
+          id="estate-starting-price"
+          placeholder="e.g. 5000000"
+          inputMode="decimal"
+          {...register("startingPrice", {
+            required: "Starting price is required",
+            validate: (value) =>
+              Number(value) > 0 || "Starting price must be greater than 0",
+          })}
+        />
+
+        {errors.startingPrice && (
+          <p className="mt-1 text-sm text-status-sold">
+            {errors.startingPrice.message}
+          </p>
+        )}
+      </div>
+
+      {/* Main Estate Image */}
+      <div>
+        <label
+          htmlFor="estate-main-image"
+          className="mb-1 block text-sm font-medium text-navy-900">
+          Estate main image
+        </label>
+
+        <input
+          id="estate-main-image"
+          type="file"
+          accept="image/*"
+          {...register("mainImage", {
+            required: "Estate main image is required",
+            validate: (files) =>
+              files?.length > 0 || "Estate main image is required",
+          })}
+          className="block w-full rounded-xl border border-navy-800/10 bg-white p-3 text-sm"
+        />
+
+        {errors.mainImage && (
+          <p className="mt-1 text-sm text-status-sold">
+            {errors.mainImage.message}
+          </p>
         )}
       </div>
 
@@ -157,6 +301,7 @@ export function EstateForm({ onSuccess, onCancel }: EstateFormProps) {
             "Add estate"
           )}
         </Button>
+
         <Button
           type="button"
           variant="outline"
