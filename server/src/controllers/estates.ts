@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, lte, ilike, or } from "drizzle-orm";
 
 import { db } from "../db/db";
 import {
@@ -198,109 +198,80 @@ export const getPropertyFilters = async (c: Context) => {
   }
 };
 
-// export const getEstateWithProperties = async (c: Context) => {
-//   try {
-//     const estateId = c.req.param("estateId");
-
-//     if (!estateId) {
-//       return c.json(
-//         {
-//           success: false,
-//           message: "Estate ID is required",
-//           data: null,
-//         },
-//         400,
-//       );
-//     }
-//     const estate = await db
-//       .select({
-//         id: estateNames.id,
-//         name: estateNames.name,
-//       })
-//       .from(estateNames)
-//       .where(eq(estateNames.id, estateId))
-//       .limit(1);
-
-//     if (!estate.length) {
-//       return c.json(
-//         {
-//           success: false,
-//           message: "Estate not found",
-//           data: null,
-//         },
-//         404,
-//       );
-//     }
-
-//     const propertiesList = await db
-//       .select({
-//         id: properties.id,
-//         estateId: properties.estateId,
-//         state: properties.state,
-//         city: properties.city,
-//         location: properties.location,
-//         description: properties.description,
-//         startingPrice: properties.startingPrice,
-//         totalPlots: properties.totalPlots,
-//         status: properties.status,
-//         mainImage: propertiesImage.mainImgUrl,
-//       })
-//       .from(properties)
-//       .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
-//       .where(eq(properties.estateId, estateId));
-
-//     return c.json(
-//       {
-//         success: true,
-//         message: "Estate fetched successfully",
-//         data: {
-//           estate: estate[0],
-//           properties: propertiesList,
-//         },
-//       },
-//       200,
-//     );
-//   } catch (error) {
-//     console.error("GET ESTATE WITH PROPERTIES ERROR:", error);
-
-//     return c.json(
-//       {
-//         success: false,
-//         message: "Failed to fetch estate",
-//         error: "INTERNAL_SERVER_ERROR",
-//         data: null,
-//       },
-//       500,
-//     );
-//   }
-// };
 export const getAllEstates = async (c: Context) => {
   try {
+    const search = c.req.query("search")?.trim() ?? "";
+    const state = c.req.query("state")?.trim() ?? "";
+    const price = c.req.query("price")?.trim() ?? "";
+
+    const conditions = [];
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(estateNames.name, `%${search}%`),
+          ilike(estateNames.city, `%${search}%`),
+          ilike(estateNames.state, `%${search}%`),
+        ),
+      );
+    }
+
+    if (state) {
+      conditions.push(eq(estateNames.state, state));
+    }
+
+    if (price) {
+      const [min, max] = price.split("-").map(Number);
+
+      if (!Number.isNaN(min) && !Number.isNaN(max)) {
+        conditions.push(
+          and(
+            gte(estateNames.startingPrice, min.toString()),
+            lte(estateNames.startingPrice, max.toString()),
+          ),
+        );
+      }
+    }
+
     const estates = await db
       .select({
         estateId: estateNames.id,
         estateName: estateNames.name,
         description: estateNames.description,
-
         city: estateNames.city,
         state: estateNames.state,
         startingPrice: estateNames.startingPrice,
-
         mainImage: estateNames.mainImageUrl,
         mainImagePublicId: estateNames.mainImagePublicId,
-
         accountName: estateNames.accountName,
         accountNumber: estateNames.accountNumber,
         bankName: estateNames.bankName,
         createdAt: estateNames.createdAt,
       })
-      .from(estateNames);
+      .from(estateNames)
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    // Get ALL available states independently of the current filters
+    const stateResults = await db
+      .selectDistinct({
+        state: estateNames.state,
+      })
+      .from(estateNames)
+      .where(ilike(estateNames.state, "%"));
+
+    const states = stateResults
+      .map((item) => item.state)
+      .filter((state): state is string => Boolean(state))
+      .sort();
 
     return c.json(
       {
         success: true,
         message: "Estates fetched successfully",
         data: estates,
+        filters: {
+          states,
+        },
       },
       200,
     );
@@ -313,6 +284,201 @@ export const getAllEstates = async (c: Context) => {
         message: "Failed to fetch estates",
         error: "INTERNAL_SERVER_ERROR",
         data: null,
+      },
+      500,
+    );
+  }
+};
+
+export const getPropertiesByEstate = async (c: Context) => {
+  try {
+    const estateId = c.req.param("estateId");
+
+    if (!estateId) {
+      return c.json(
+        {
+          success: false,
+          message: "Estate ID is required",
+          data: null,
+        },
+        400,
+      );
+    }
+
+    // Get estate details
+    const [estate] = await db
+      .select({
+        id: estateNames.id,
+        estateName: estateNames.name,
+        description: estateNames.description,
+        city: estateNames.city,
+        state: estateNames.state,
+
+        startingPrice: estateNames.startingPrice,
+        mainImage: estateNames.mainImageUrl,
+        mainImagePublicId: estateNames.mainImagePublicId,
+        accountName: estateNames.accountName,
+        accountNumber: estateNames.accountNumber,
+        bankName: estateNames.bankName,
+        createdAt: estateNames.createdAt,
+      })
+      .from(estateNames)
+      .where(eq(estateNames.id, estateId))
+      .limit(1);
+
+    if (!estate) {
+      return c.json(
+        {
+          success: false,
+          message: "Estate not found",
+          data: null,
+        },
+        404,
+      );
+    }
+
+    // Get properties inside the estate
+    const propertiesList = await db
+      .select({
+        id: properties.id,
+        estateId: properties.estateId,
+        state: properties.state,
+
+        city: properties.city,
+        location: properties.location,
+        description: properties.description,
+        startingPrice: properties.startingPrice,
+        totalPlots: properties.totalPlots,
+        status: properties.status,
+        mainImage: propertiesImage.mainImgUrl,
+      })
+      .from(properties)
+      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
+      .where(eq(properties.estateId, estateId));
+
+    return c.json(
+      {
+        success: true,
+        message: "Estate and properties fetched successfully",
+        data: {
+          estate,
+          properties: propertiesList,
+        },
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("GET ESTATE PROPERTIES ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch estate properties",
+        error: "INTERNAL_SERVER_ERROR",
+        data: null,
+      },
+      500,
+    );
+  }
+};
+
+export const getAllActiveProperties = async (c: Context) => {
+  try {
+    const search = c.req.query("search")?.trim() ?? "";
+    const state = c.req.query("state")?.trim() ?? "";
+    const price = c.req.query("price")?.trim() ?? "";
+
+    const conditions = [eq(properties.status, "ACTIVE")];
+
+    // Search available properties
+    if (search) {
+      conditions.push(
+        or(
+          ilike(properties.location, `%${search}%`),
+          ilike(properties.city, `%${search}%`),
+          ilike(properties.state, `%${search}%`),
+          ilike(estateNames.name, `%${search}%`),
+        )!,
+      );
+    }
+
+    // State filter
+    if (state) {
+      conditions.push(eq(properties.state, state));
+    }
+
+    // Price filter
+    if (price) {
+      const [min, max] = price.split("-").map(Number);
+
+      if (!Number.isNaN(min) && !Number.isNaN(max)) {
+        conditions.push(
+          and(
+            gte(properties.startingPrice, min.toString()),
+            lte(properties.startingPrice, max.toString()),
+          )!,
+        );
+      }
+    }
+
+    const propertiesList = await db
+      .select({
+        id: properties.id,
+        estateId: properties.estateId,
+        estateName: estateNames.name,
+
+        state: properties.state,
+        city: properties.city,
+        location: properties.location,
+
+        description: properties.description,
+        startingPrice: properties.startingPrice,
+        totalPlots: properties.totalPlots,
+        status: properties.status,
+
+        mainImage: propertiesImage.mainImgUrl,
+      })
+      .from(properties)
+      .innerJoin(estateNames, eq(estateNames.id, properties.estateId))
+      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
+      .where(and(...conditions));
+
+    // States that actually have ACTIVE properties
+    const stateResults = await db
+      .selectDistinct({
+        state: properties.state,
+      })
+      .from(properties)
+      .where(eq(properties.status, "ACTIVE"));
+
+    const states = stateResults
+      .map((item) => item.state)
+      .filter((state): state is string => Boolean(state))
+      .sort();
+
+    return c.json(
+      {
+        success: true,
+        message: "Active properties fetched successfully",
+        data: propertiesList,
+        filters: {
+          states,
+        },
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("GET ALL ACTIVE PROPERTIES ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch active properties",
+        error: "INTERNAL_SERVER_ERROR",
+        data: null,
+        filters: {
+          states: [],
+        },
       },
       500,
     );

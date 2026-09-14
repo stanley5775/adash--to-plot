@@ -11,6 +11,7 @@ export interface Landmark {
 
 export type Estate = {
   id: string;
+  estateId: string;
   estateName: string;
   state: string;
   city: string;

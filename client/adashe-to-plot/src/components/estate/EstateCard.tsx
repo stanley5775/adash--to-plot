@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, ArrowRight } from "lucide-react";
 import type { Estate } from "@/types/estate";
-import { Badge } from "@/components/ui/Badge";
+
 import { formatNaira } from "@/lib/payment";
 
 export function EstateCard({ estate }: { estate: Estate }) {
   return (
     <Link
-      href={`/properties/${estate.id}`}
+      href={`/estates/${estate.estateId}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-navy-800/10 bg-white transition-shadow hover:shadow-[0_24px_48px_-24px_rgba(10,25,48,0.35)]">
       <div className="relative h-56 w-full overflow-hidden">
         {estate.mainImage ? (

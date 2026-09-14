@@ -13,24 +13,8 @@ import { BookInspectionButton } from "@/components/booking/BookInspectionButton"
 import { WhatsAppButton } from "@/components/booking/WhatsAppButton";
 import { Badge } from "@/components/ui/Badge";
 
-export default function EstateDetails({ estate }: { estate: Estate }) {
-  const { data, isLoading } = useGetPropertiesUsersById(estate.id);
-
-  const property = data?.data ?? estate;
-
-  if (isLoading) {
-    return (
-      <div className="container-page py-10 sm:py-14">
-        <div className="animate-pulse">
-          <div className="h-6 w-32 rounded bg-navy-800/10" />
-          <div className="mt-4 h-10 w-80 rounded bg-navy-800/10" />
-          <div className="mt-8 h-[400px] rounded-3xl bg-navy-800/10" />
-        </div>
-      </div>
-    );
-  }
-
-  const estateName = property.estate?.name ?? estate.estateName;
+export default function PropertyDetails({ property }: { property: any }) {
+  const estateName = property.estate?.name ?? "Property";
 
   const gallery = [
     property.images?.mainImgUrl,
@@ -62,33 +46,29 @@ export default function EstateDetails({ estate }: { estate: Estate }) {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            {/* <BookInspectionButton /> */}
-
-            <WhatsAppButton
-              message={`Hello Adashè-to-Plot, I'm interested in ${estateName} and would like more information.`}
-            />
-          </div>
+          <WhatsAppButton
+            message={`Hello Adashè-to-Plot, I'm interested in ${estateName} and would like more information.`}
+          />
         </div>
 
-        {/* GALLERY — SAME OLD UI */}
+        {/* GALLERY */}
         <div className="mt-8">
           <EstateGallery images={gallery} name={estateName} />
         </div>
 
-        {/* STATS — SAME OLD UI */}
+        {/* STATS */}
         <div className="mt-10">
           <EstateStats estate={property} />
         </div>
 
-        {/* ABOUT — SAME OLD UI */}
+        {/* ABOUT */}
         <div className="mt-14 grid grid-cols-1 gap-12 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <h2 className="text-xl font-bold text-navy-950">
               About {estateName}
             </h2>
 
-            <p className="mt-4 leading-relaxed text-ink-700">
+            <p className="mt-4 whitespace-pre-line leading-relaxed text-ink-700">
               {property.description}
             </p>
 
@@ -102,6 +82,7 @@ export default function EstateDetails({ estate }: { estate: Estate }) {
                   key={feature}
                   className="flex items-center gap-2 text-sm text-ink-700">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-gold-600" />
+
                   {feature}
                 </li>
               ))}
@@ -109,20 +90,16 @@ export default function EstateDetails({ estate }: { estate: Estate }) {
           </div>
         </div>
 
-        {/* AVAILABLE PLOTS — SAME OLD UI */}
+        {/* AVAILABLE PLOTS */}
         <div id="plots" className="mt-16 scroll-mt-24">
           <h2 className="text-xl font-bold text-navy-950">Available Plots</h2>
 
           <p className="mt-2 text-ink-500">
             {property.totalPlots} plots currently offered at {estateName}.
           </p>
-
-          <div className="mt-6">
-            <PropertyGrid properties={[property]} estateName={estateName} />
-          </div>
         </div>
 
-        {/* PAYMENT PLANS — SAME OLD UI */}
+        {/* PAYMENT PLANS */}
         {paymentPlans.length > 0 && (
           <div className="mt-16">
             <h2 className="text-xl font-bold text-navy-950">
@@ -142,15 +119,13 @@ export default function EstateDetails({ estate }: { estate: Estate }) {
           </div>
         )}
 
-        {/* CTA — SAME OLD UI */}
+        {/* CTA */}
         <div className="mt-16 flex flex-col items-center gap-4 rounded-3xl bg-navy-950 px-8 py-12 text-center">
           <h2 className="text-2xl font-bold text-white">
             Ready to see {estateName} in person?
           </h2>
 
           <div className="flex flex-wrap justify-center gap-4">
-            {/* <BookInspectionButton size="lg" /> */}
-
             <WhatsAppButton
               message={`Hello Adashè-to-Plot, I'm interested in ${estateName} and would like more information.`}
               size="lg"

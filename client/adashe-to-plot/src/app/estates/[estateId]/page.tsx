@@ -1,21 +1,24 @@
-import { notFound } from "next/navigation";
-// import { getPropertiesUsersById } from "@/api/estate";
-import EstateDetails from "@/components/estate/EstateDetails";
-import { getPropertiesUsersById } from "../../../../api/estate";
-// import EstateDetails from "./EstateDetails";
+"use client";
 
-export default async function EstateDetailsPage({
+import { use } from "react";
+
+import { PropertyGrid } from "@/components/property/PropertyGrid";
+import { useGetPropertiesByEstate } from "../../../../hook/estates";
+
+export default function EstateDetailsPage({
   params,
 }: {
   params: Promise<{ estateId: string }>;
 }) {
-  const { estateId } = await params;
+  const { estateId } = use(params);
 
-  const response = await getPropertiesUsersById(estateId);
+  const { data, isLoading, error } = useGetPropertiesByEstate(estateId);
 
-  if (!response?.data) {
-    notFound();
-  }
-
-  return <EstateDetails estate={response.data} />;
+  return (
+    <PropertyGrid
+      properties={data?.data?.properties ?? []}
+      estate={data?.data?.estate}
+      isLoading={isLoading}
+    />
+  );
 }

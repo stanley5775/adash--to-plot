@@ -32,14 +32,91 @@ export const getPropertiesUsersById = async (propertyId: string) => {
   return res.json();
 };
 
-export const getAllEstates = async () => {
-  const res = await fetch(`${api}/api/estate`, {
+export const getAllEstates = async ({
+  search = "",
+  state = "",
+  price = "",
+}: {
+  search?: string;
+  state?: string;
+  price?: string;
+} = {}) => {
+  const params = new URLSearchParams();
+
+  if (search) {
+    params.set("search", search);
+  }
+
+  if (state) {
+    params.set("state", state);
+  }
+
+  if (price) {
+    params.set("price", price);
+  }
+
+  const query = params.toString();
+
+  const res = await fetch(`${api}/api/estate${query ? `?${query}` : ""}`, {
     credentials: "include",
   });
 
+  const result = await res.json();
+
   if (!res.ok) {
-    throw new Error("Failed to fetch estates");
+    throw new Error(result.message || "Failed to fetch estates");
   }
 
-  return res.json();
+  return result;
+};
+
+export const getPropertiesByEstate = async (estateId: string) => {
+  const res = await fetch(`${api}/api/estate/${estateId}/properties`, {
+    credentials: "include",
+  });
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(result?.message || "Failed to fetch estate properties");
+  }
+
+  return result;
+};
+
+export const getAllActiveProperties = async (
+  search = "",
+  state = "",
+  price = "",
+) => {
+  const params = new URLSearchParams();
+
+  if (search) {
+    params.set("search", search);
+  }
+
+  if (state) {
+    params.set("state", state);
+  }
+
+  if (price) {
+    params.set("price", price);
+  }
+
+  const query = params.toString();
+
+  const res = await fetch(
+    `${api}/api/estate/active${query ? `?${query}` : ""}`,
+    {
+      credentials: "include",
+    },
+  );
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to fetch active properties");
+  }
+
+  return result;
 };

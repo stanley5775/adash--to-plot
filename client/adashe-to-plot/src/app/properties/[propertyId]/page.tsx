@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-// import { getPropertiesUsersById } from "@/api/estate";
-import EstateDetails from "@/components/estate/EstateDetails";
-import { getPropertiesUsersById } from "../../../../api/estate";
-// import EstateDetails from "./EstateDetails";
+
+import { PropertyCard } from "@/components/property/PropertyCard";
+import { getPropertiesByEstate } from "../../../../api/estate";
+import PropertyDetails from "@/components/estate/PropertyDetails";
 
 export default async function EstateDetailsPage({
   params,
@@ -11,11 +11,19 @@ export default async function EstateDetailsPage({
 }) {
   const { estateId } = await params;
 
-  const response = await getPropertiesUsersById(estateId);
+  const response = await getPropertiesByEstate(estateId);
 
   if (!response?.data) {
     notFound();
   }
 
-  return <EstateDetails estate={response.data} />;
+  return (
+    <div className="container-page py-16">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {response.data.map((property: any) => (
+          <PropertyDetails property={response.data} />
+        ))}
+      </div>
+    </div>
+  );
 }
