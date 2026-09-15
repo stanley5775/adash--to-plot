@@ -1,56 +1,20 @@
 import type { Context } from "hono";
-import { and, eq, gte, lte, ilike, or } from "drizzle-orm";
+import { and, eq, gt, gte, lte, ilike, or } from "drizzle-orm";
+import { verify, sign } from "hono/jwt";
+import { getCookie, setCookie } from "hono/cookie";
 
+import { env } from "../env";
+import { sessions, users } from "../db/schema";
+import { FIFTEEN_MINUTES_SECONDS } from "../utils/cookies";
 import { db } from "../db/db";
 import {
   properties,
   estateNames,
   propertiesImage,
+  atiMemberships,
   paymentPlans,
   PropertyPaymentPlan,
 } from "../db/schema";
-
-export const getAllProperties = async (c: Context) => {
-  try {
-    const allProperties = await db
-      .select({
-        id: properties.id,
-        estateName: estateNames.name,
-        state: properties.state,
-        city: properties.city,
-        status: properties.status,
-        location: properties.location,
-        description: properties.description,
-        startingPrice: properties.startingPrice,
-        totalPlots: properties.totalPlots,
-        mainImage: propertiesImage.mainImgUrl,
-      })
-      .from(properties)
-
-      .leftJoin(estateNames, eq(properties.estateId, estateNames.id))
-      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id));
-    return c.json(
-      {
-        success: true,
-        message: "Properties fetched successfully",
-        data: allProperties,
-      },
-      200,
-    );
-  } catch (error) {
-    console.error("GET ALL PROPERTIES ERROR:", error);
-
-    return c.json(
-      {
-        success: false,
-        message: "Failed to fetch properties",
-        error: "INTERNAL_SERVER_ERROR",
-        data: null,
-      },
-      500,
-    );
-  }
-};
 
 export const getPropertyById = async (c: Context) => {
   try {
@@ -68,15 +32,14 @@ export const getPropertyById = async (c: Context) => {
     }
 
     // GET PROPERTY
+
     const [property] = await db
       .select({
         property: properties,
-
         estate: {
           id: estateNames.id,
           name: estateNames.name,
         },
-
         images: propertiesImage,
       })
       .from(properties)
@@ -96,11 +59,186 @@ export const getPropertyById = async (c: Context) => {
       );
     }
 
+    // OPTIONAL AUTHENTICATION
+
+    let isAuthenticated = false;
+    let userId: string | null = null;
+
+    const accessToken = getCookie(c, "accessToken");
+
+    if (accessToken) {
+      try {
+        const payload = await verify(
+          accessToken,
+          env.JWT_ACCESS_SECRET,
+          "HS256",
+        );
+
+        const tokenUserId = payload.id as string;
+
+        if (tokenUserId) {
+          isAuthenticated = true;
+          userId = tokenUserId;
+        }
+      } catch {
+        // Access token invalid/expired.
+        // Try refresh token below.
+      }
+    }
+
+    // TRY REFRESH TOKEN
+
+    if (!isAuthenticated) {
+      const refreshToken = getCookie(c, "refreshToken");
+
+      if (refreshToken) {
+        try {
+          const refreshPayload = await verify(
+            refreshToken,
+            env.JWT_REFRESH_SECRET,
+            "HS256",
+          );
+
+          const refreshUserId = refreshPayload.id as string;
+
+          if (refreshUserId) {
+            const [session] = await db
+              .select()
+              .from(sessions)
+              .where(
+                and(
+                  eq(sessions.refreshToken, refreshToken),
+                  eq(sessions.userId, refreshUserId),
+                ),
+              )
+              .limit(1);
+
+            if (session && session.expiresAt > new Date()) {
+              const [user] = await db
+                .select({
+                  id: users.id,
+                  role: users.role,
+                })
+                .from(users)
+                .where(eq(users.id, refreshUserId))
+                .limit(1);
+
+              if (user) {
+                const newAccessToken = await sign(
+                  {
+                    id: user.id,
+                    role: user.role,
+                    exp:
+                      Math.floor(Date.now() / 1000) + FIFTEEN_MINUTES_SECONDS,
+                  },
+                  env.JWT_ACCESS_SECRET,
+                );
+
+                setCookie(c, "accessToken", newAccessToken, {
+                  httpOnly: true,
+                  secure: process.env.NODE_ENV === "production",
+                  sameSite:
+                    process.env.NODE_ENV === "production" ? "None" : "Lax",
+                  path: "/",
+                  maxAge: FIFTEEN_MINUTES_SECONDS,
+                });
+
+                isAuthenticated = true;
+                userId = user.id;
+              }
+            }
+          }
+        } catch {
+          // Invalid refresh token.
+          // Treat as visitor.
+        }
+      }
+    }
+
+    // CHECK ATI MEMBERSHIP
+
+    let isAtiMember = false;
+
+    if (isAuthenticated && userId) {
+      const now = new Date();
+
+      const [membership] = await db
+        .select({
+          id: atiMemberships.id,
+        })
+        .from(atiMemberships)
+        .where(
+          and(
+            eq(atiMemberships.userId, userId),
+            eq(atiMemberships.status, "ACTIVE"),
+            eq(atiMemberships.ATI_membership, true),
+            gt(atiMemberships.expiryDate, now),
+          ),
+        )
+        .limit(1);
+
+      isAtiMember = !!membership;
+    }
+
+    // CAN PURCHASE
+    // ATI IS NOT REQUIRED.
+    // User only needs to be logged in
+    // and property must be ACTIVE.
+
+    const canPurchase =
+      isAuthenticated && property.property.status === "ACTIVE";
+
     // GET PAYMENT PLANS
-    const paymentPlans = await db
-      .select()
-      .from(PropertyPaymentPlan)
-      .where(eq(PropertyPaymentPlan.propertyId, propertyId));
+
+    const rawPaymentPlans =
+      property.property.status === "ACTIVE"
+        ? await db
+            .select()
+            .from(PropertyPaymentPlan)
+            .where(eq(PropertyPaymentPlan.propertyId, propertyId))
+        : [];
+
+    // CALCULATE PRICES
+
+    const paymentPlans = rawPaymentPlans.map((plan) => {
+      const originalTotalAmount = Number(plan.totalAmount);
+      const originalMonthlyAmount = plan.monthlyAmount
+        ? Number(plan.monthlyAmount)
+        : null;
+
+      const discountAmount = isAtiMember ? originalTotalAmount * 0.05 : 0;
+
+      const totalAmount = originalTotalAmount - discountAmount;
+
+      const monthlyAmount =
+        plan.durationMonths && plan.durationMonths > 0
+          ? totalAmount / plan.durationMonths
+          : null;
+
+      return {
+        ...plan,
+
+        // Original price
+        originalTotalAmount: originalTotalAmount.toFixed(2),
+
+        originalMonthlyAmount:
+          originalMonthlyAmount !== null
+            ? originalMonthlyAmount.toFixed(2)
+            : null,
+
+        // ACTUAL USER PRICE
+        totalAmount: totalAmount.toFixed(2),
+
+        monthlyAmount: monthlyAmount !== null ? monthlyAmount.toFixed(2) : null,
+
+        // ATI information
+        atiDiscountAmount: discountAmount.toFixed(2),
+
+        atiDiscountPercentage: isAtiMember ? 5 : 0,
+      };
+    });
+
+    // RESPONSE
 
     return c.json(
       {
@@ -131,6 +269,10 @@ export const getPropertyById = async (c: Context) => {
               }
             : null,
 
+          isAuthenticated,
+          isAtiMember,
+          canPurchase,
+
           paymentPlans,
         },
       },
@@ -144,53 +286,6 @@ export const getPropertyById = async (c: Context) => {
         success: false,
         message: "Failed to fetch property",
         error: "INTERNAL_SERVER_ERROR",
-        data: null,
-      },
-      500,
-    );
-  }
-};
-
-export const getPropertyFilters = async (c: Context) => {
-  try {
-    const rows = await db
-      .select({
-        location: properties.location,
-        city: properties.city,
-        estateName: estateNames.name,
-      })
-      .from(properties)
-      .innerJoin(estateNames, eq(properties.estateId, estateNames.id));
-
-    const locations = [
-      ...new Set(rows.map((row) => row.location).filter(Boolean)),
-    ];
-
-    const cities = [...new Set(rows.map((row) => row.city).filter(Boolean))];
-
-    const estateNamesList = [
-      ...new Set(rows.map((row) => row.estateName).filter(Boolean)),
-    ];
-
-    return c.json(
-      {
-        success: true,
-        message: "Property filters fetched successfully",
-        data: {
-          locations,
-          cities,
-          estateNames: estateNamesList,
-        },
-      },
-      200,
-    );
-  } catch (error) {
-    console.error("GET PROPERTY FILTERS ERROR:", error);
-
-    return c.json(
-      {
-        success: false,
-        message: "Failed to fetch property filters",
         data: null,
       },
       500,

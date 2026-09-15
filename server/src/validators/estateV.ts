@@ -14,5 +14,5 @@ export const createEstateSchema = z.object({
     .positive("Total plots must be greater than 0"),
   features: z.string().optional().default(""),
   nearbyLandmarks: z.string().optional().default(""),
-  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+  status: z.enum(["ACTIVE", "NON_ACTIVE", "SOLD_OUT"]).default("ACTIVE"),
 });

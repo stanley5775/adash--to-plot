@@ -11,9 +11,10 @@ import {
   numeric,
   unique,
   uuid,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
-
+import { sql } from "drizzle-orm";
 // ENUMS;
 
 export const userRoleEnum = pgEnum("user_role", [
@@ -23,11 +24,10 @@ export const userRoleEnum = pgEnum("user_role", [
 ]);
 
 export const estateStatusEnum = pgEnum("estate_status", ["ACTIVE", "INACTIVE"]);
-
 export const propertyStatusEnum = pgEnum("property_status", [
-  "AVAILABLE",
-  "RESERVED",
-  "SOLD",
+  "ACTIVE",
+  "NON_ACTIVE",
+  "SOLD_OUT",
 ]);
 
 export const paymentPlanStatusEnum = pgEnum("payment_plan_status", [
@@ -207,7 +207,7 @@ export const properties = pgTable(
       .references(() => estateNames.id, {
         onDelete: "restrict",
       }),
-    status: text("status").notNull().default("ACTIVE"),
+    status: propertyStatusEnum("status").notNull().default("ACTIVE"),
     location: text("location").notNull(),
 
     city: text("city").notNull(),
@@ -298,9 +298,16 @@ export const PropertyPaymentPlan = pgTable(
   },
   (table) => [
     index("property_payment_plan_property_idx").on(table.propertyId),
+
     index("property_payment_plan_estate_idx").on(table.estateId),
+
+    // Only ONE Outright plan per property
+    uniqueIndex("property_payment_plan_one_outright_idx")
+      .on(table.propertyId)
+      .where(sql`${table.durationMonths} IS NULL`),
   ],
 );
+
 export const propertiesImage = pgTable(
   "properties_images",
   {

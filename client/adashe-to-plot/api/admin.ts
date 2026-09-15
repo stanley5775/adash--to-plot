@@ -259,3 +259,41 @@ export const getAllApplicants = async () => {
 
   return result.data;
 };
+
+export const getPropertyPaymentPlans = async (
+  propertyId: string,
+): Promise<any[]> => {
+  const res = await fetch(`${api}/admin/estate/${propertyId}/payment-plans`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const result = await res.json();
+
+  console.log("GET PAYMENT PLANS STATUS:", res.status);
+  console.log("GET PAYMENT PLANS RESPONSE:", result);
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to fetch payment plans");
+  }
+
+  return result.data;
+};
+
+export const deletePropertyPaymentPlan = async (planId: string) => {
+  const res = await fetch(`${api}/admin/estate/payment-plans/${planId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  const result = await res.json();
+
+  console.log("DELETE PAYMENT PLAN STATUS:", res.status);
+  console.log("DELETE PAYMENT PLAN RESPONSE:", result);
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to delete payment plan");
+  }
+
+  return result.data;
+};

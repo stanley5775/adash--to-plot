@@ -1,11 +1,8 @@
-export interface PropertyDocumentation {
-  surveyPlan: boolean;
-  deedOfAssignment: boolean;
-  allocation: boolean;
-  contractOfSale: boolean;
+export enum PropertyStatus {
+  ACTIVE = "ACTIVE",
+  NON_ACTIVE = "NON_ACTIVE",
+  SOLD_OUT = "SOLD_OUT",
 }
-
-export type PropertyStatus = "AVAILABLE" | "SOLD" | "RESERVED" | "UNAVAILABLE";
 
 export interface Property {
   id: string;

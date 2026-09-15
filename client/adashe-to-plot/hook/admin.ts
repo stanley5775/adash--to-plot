@@ -12,6 +12,8 @@ import {
   toggleUserATI,
   getAllATIMembers,
   getAllApplicants,
+  getPropertyPaymentPlans,
+  deletePropertyPaymentPlan,
 } from "../api/admin";
 import { useQuery } from "@tanstack/react-query";
 
@@ -176,5 +178,33 @@ export const useGetAllApplicants = () => {
   return useQuery({
     queryKey: ["applicants"],
     queryFn: getAllApplicants,
+  });
+};
+
+export const useGetPropertyPaymentPlans = (propertyId: string) => {
+  return useQuery({
+    queryKey: ["propertyPaymentPlans", propertyId],
+    queryFn: () => getPropertyPaymentPlans(propertyId),
+    enabled: !!propertyId,
+  });
+};
+
+export const useDeletePropertyPaymentPlan = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      planId,
+      propertyId,
+    }: {
+      planId: string;
+      propertyId: string;
+    }) => deletePropertyPaymentPlan(planId),
+
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["propertyPaymentPlans", variables.propertyId],
+      });
+    },
   });
 };

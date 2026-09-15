@@ -13,12 +13,20 @@ import {
 } from "../db/schema";
 import { createEstateSchema } from "../validators/estateV";
 import { uploadImage } from "../services/uploadImage";
-import { and, eq, ne, desc } from "drizzle-orm";
+import { and, eq, ne, desc, asc } from "drizzle-orm";
 import { createPropertyPaymentPlansSchema } from "../validators/propertyPlan";
 import { createEstateNameSchema } from "../validators/createEstate";
 import { deleteImage } from "../utils/deleteImage";
 import STMPservice from "../services/email";
-
+type PaymentPlanInsert = {
+  propertyId: string;
+  estateId: string;
+  name: string;
+  durationMonths: number | null;
+  totalAmount: string;
+  monthlyAmount: string | null;
+  interestRate: string;
+};
 export const createEstate = async (c: Context) => {
   try {
     const formData = await c.req.formData();
@@ -368,6 +376,8 @@ export const createPropertyPaymentPlans = async (c: Context) => {
       );
     }
 
+    // VALIDATE REQUEST
+
     const body = await c.req.json();
 
     const result = createPropertyPaymentPlansSchema.safeParse(body);
@@ -389,7 +399,19 @@ export const createPropertyPaymentPlans = async (c: Context) => {
 
     const { plans } = result.data;
 
-    // CHECK PROPERTY
+    if (!plans || plans.length === 0) {
+      return c.json(
+        {
+          success: false,
+          message: "At least one payment plan is required",
+          data: null,
+        },
+        400,
+      );
+    }
+
+    // GET PROPERTY
+
     const [property] = await db
       .select({
         id: properties.id,
@@ -411,51 +433,11 @@ export const createPropertyPaymentPlans = async (c: Context) => {
       );
     }
 
-    // CHECK DUPLICATES IN REQUEST
-    const planNames = plans.map((plan) => plan.name.trim().toLowerCase());
-
-    if (new Set(planNames).size !== planNames.length) {
-      return c.json(
-        {
-          success: false,
-          message: "Duplicate payment plans are not allowed",
-          data: null,
-        },
-        409,
-      );
-    }
-
-    // CHECK EXISTING PLANS
-    for (const plan of plans) {
-      const [existingPlan] = await db
-        .select({
-          id: PropertyPaymentPlan.id,
-          name: PropertyPaymentPlan.name,
-        })
-        .from(PropertyPaymentPlan)
-        .where(
-          and(
-            eq(PropertyPaymentPlan.propertyId, propertyId),
-            eq(PropertyPaymentPlan.name, plan.name.trim()),
-          ),
-        )
-        .limit(1);
-
-      if (existingPlan) {
-        return c.json(
-          {
-            success: false,
-            message: `Payment plan "${plan.name}" already exists for this property`,
-            data: null,
-          },
-          409,
-        );
-      }
-    }
+    // VALIDATE STARTING PRICE
 
     const startingPrice = Number(property.startingPrice);
 
-    if (isNaN(startingPrice) || startingPrice <= 0) {
+    if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
       return c.json(
         {
           success: false,
@@ -466,10 +448,96 @@ export const createPropertyPaymentPlans = async (c: Context) => {
       );
     }
 
-    // CREATE OUTRIGHT + INSTALLMENT PLANS
-    // CREATE OUTRIGHT + INSTALLMENT PLANS
-    const paymentPlans = [
-      {
+    // CHECK DUPLICATES
+
+    const durations = plans.map((plan) => plan.durationMonths);
+
+    const uniqueDurations = new Set(durations);
+
+    if (uniqueDurations.size !== durations.length) {
+      return c.json(
+        {
+          success: false,
+          message: "You cannot add the same payment duration more than once.",
+          data: null,
+        },
+        409,
+      );
+    }
+
+    // GET EXISTING PLANS
+
+    const existingPlans = await db
+      .select({
+        id: PropertyPaymentPlan.id,
+        name: PropertyPaymentPlan.name,
+        durationMonths: PropertyPaymentPlan.durationMonths,
+      })
+      .from(PropertyPaymentPlan)
+      .where(eq(PropertyPaymentPlan.propertyId, propertyId));
+
+    // CHECK IF SELECTED PLANS
+
+    for (const plan of plans) {
+      const alreadyExists = existingPlans.some(
+        (existingPlan) => existingPlan.durationMonths === plan.durationMonths,
+      );
+
+      if (alreadyExists) {
+        return c.json(
+          {
+            success: false,
+            message: `${plan.durationMonths}-month payment plan already exists for this property.`,
+            data: null,
+          },
+          409,
+        );
+      }
+    }
+
+    // PREPARE PAYMENT PLANS
+
+    const paymentPlans: PaymentPlanInsert[] = plans.map((plan) => {
+      const months = plan.durationMonths;
+
+      let interestRate = 0;
+
+      // 6 months = 0%
+      // 12 months = 9%
+      // 18 months = 9%
+      // 24 months = 11%
+
+      if (months === 12 || months === 18) {
+        interestRate = 9;
+      } else if (months === 24) {
+        interestRate = 11;
+      }
+
+      const interestAmount = startingPrice * (interestRate / 100);
+
+      const totalAmount = startingPrice + interestAmount;
+
+      const monthlyAmount = totalAmount / months;
+
+      return {
+        propertyId: property.id,
+        estateId: property.estateId,
+        name: `${months} Months`,
+        durationMonths: months,
+        totalAmount: totalAmount.toFixed(2),
+        monthlyAmount: monthlyAmount.toFixed(2),
+        interestRate: interestRate.toFixed(2),
+      };
+    });
+
+    // ADD OUTRIGHT ONLY ONCE
+
+    const outrightExists = existingPlans.some(
+      (plan) => plan.durationMonths === null,
+    );
+
+    if (!outrightExists) {
+      paymentPlans.unshift({
         propertyId: property.id,
         estateId: property.estateId,
         name: "Outright",
@@ -477,40 +545,10 @@ export const createPropertyPaymentPlans = async (c: Context) => {
         totalAmount: startingPrice.toFixed(2),
         monthlyAmount: null,
         interestRate: "0.00",
-      },
+      });
+    }
 
-      ...plans.map((plan) => {
-        const months = plan.durationMonths;
-
-        // DETERMINE INTEREST FROM DURATION
-        let interestRate = 0;
-
-        if (months === 12 || months === 18) {
-          interestRate = 9;
-        } else if (months === 24) {
-          interestRate = 11;
-        }
-
-        // CALCULATE INTEREST
-        const interestAmount = startingPrice * (interestRate / 100);
-
-        // PROPERTY PRICE + INTEREST
-        const totalAmount = startingPrice + interestAmount;
-
-        // MONTHLY PAYMENT
-        const monthlyAmount = totalAmount / months;
-
-        return {
-          propertyId: property.id,
-          estateId: property.estateId,
-          name: plan.name.trim(),
-          durationMonths: months,
-          totalAmount: totalAmount.toFixed(2),
-          monthlyAmount: monthlyAmount.toFixed(2),
-          interestRate: interestRate.toFixed(2),
-        };
-      }),
-    ];
+    // INSERT
 
     const createdPlans = await db
       .insert(PropertyPaymentPlan)
@@ -539,7 +577,6 @@ export const createPropertyPaymentPlans = async (c: Context) => {
     );
   }
 };
-
 export const getAllProperties = async (c: Context) => {
   try {
     const allProperties = await db
@@ -1789,6 +1826,126 @@ export const getAllApplicants = async (c: Context) => {
         success: false,
         message: "Failed to fetch applicants",
         data: null,
+      },
+      500,
+    );
+  }
+};
+
+export const getPropertyPaymentPlans = async (c: Context) => {
+  try {
+    const propertyId = c.req.param("propertyId");
+
+    if (!propertyId) {
+      return c.json(
+        {
+          success: false,
+          message: "Property ID is required",
+        },
+        400,
+      );
+    }
+
+    const paymentPlans = await db
+      .select({
+        id: PropertyPaymentPlan.id,
+        propertyId: PropertyPaymentPlan.propertyId,
+        estateId: PropertyPaymentPlan.estateId,
+        name: PropertyPaymentPlan.name,
+        durationMonths: PropertyPaymentPlan.durationMonths,
+        totalAmount: PropertyPaymentPlan.totalAmount,
+        monthlyAmount: PropertyPaymentPlan.monthlyAmount,
+        interestRate: PropertyPaymentPlan.interestRate,
+        createdAt: PropertyPaymentPlan.createdAt,
+      })
+      .from(PropertyPaymentPlan)
+      .where(eq(PropertyPaymentPlan.propertyId, propertyId))
+      .orderBy(asc(PropertyPaymentPlan.durationMonths));
+
+    return c.json({
+      success: true,
+      message: "Payment plans fetched successfully",
+      data: paymentPlans,
+    });
+  } catch (error) {
+    console.error("Get payment plans error:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch payment plans",
+      },
+      500,
+    );
+  }
+};
+
+export const deletePropertyPaymentPlan = async (c: Context) => {
+  try {
+    const planId = c.req.param("planId");
+
+    if (!planId) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment plan ID is required",
+        },
+        400,
+      );
+    }
+
+    const existingPlan = await db
+      .select({
+        id: PropertyPaymentPlan.id,
+        name: PropertyPaymentPlan.name,
+        propertyId: PropertyPaymentPlan.propertyId,
+      })
+      .from(PropertyPaymentPlan)
+      .where(eq(PropertyPaymentPlan.id, planId))
+      .limit(1);
+
+    if (existingPlan.length === 0) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment plan not found",
+        },
+        404,
+      );
+    }
+
+    const plan = existingPlan[0];
+
+    // Do not allow the automatically-created Outright plan to be deleted
+    if (plan.name.trim().toLowerCase() === "outright") {
+      return c.json(
+        {
+          success: false,
+          message: "Outright payment plan cannot be deleted",
+        },
+        400,
+      );
+    }
+
+    await db
+      .delete(PropertyPaymentPlan)
+      .where(eq(PropertyPaymentPlan.id, planId));
+
+    return c.json({
+      success: true,
+      message: "Payment plan deleted successfully",
+      data: {
+        id: plan.id,
+        propertyId: plan.propertyId,
+      },
+    });
+  } catch (error) {
+    console.error("Delete payment plan error:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to delete payment plan",
       },
       500,
     );

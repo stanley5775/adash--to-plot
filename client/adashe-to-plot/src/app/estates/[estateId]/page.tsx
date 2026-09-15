@@ -14,6 +14,9 @@ export default function EstateDetailsPage({
 
   const { data, isLoading, error } = useGetPropertiesByEstate(estateId);
 
+  console.log("ESTATE ID:", estateId);
+  console.log("ESTATE DATA:", data);
+
   return (
     <PropertyGrid
       properties={data?.data?.properties ?? []}

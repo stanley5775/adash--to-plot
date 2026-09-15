@@ -15,6 +15,8 @@ import {
   getAllATIMembers,
   toggleUserATI,
   getAllApplicants,
+  getPropertyPaymentPlans,
+  deletePropertyPaymentPlan,
 } from "../controllers/admin.Controller";
 
 import { requireAuth } from "../middleware/authMiddleware";
@@ -40,4 +42,6 @@ admin.get("/users", getAllUsers);
 admin.get("/ati-members", getAllATIMembers);
 admin.patch("/ati-members/:userId/toggle", toggleUserATI);
 admin.get("/applicants", getAllApplicants);
+admin.get("/:propertyId/payment-plans", getPropertyPaymentPlans);
+admin.delete("/payment-plans/:planId", deletePropertyPaymentPlan);
 export default admin;

@@ -1,29 +1,31 @@
-import { notFound } from "next/navigation";
+"use client";
 
-import { PropertyCard } from "@/components/property/PropertyCard";
-import { getPropertiesByEstate } from "../../../../api/estate";
+import { use } from "react";
+
+import { useGetPropertiesUsersById } from "../../../../hook/estates";
 import PropertyDetails from "@/components/estate/PropertyDetails";
 
-export default async function EstateDetailsPage({
+export default function EstateDetailsPage({
   params,
 }: {
-  params: Promise<{ estateId: string }>;
+  params: Promise<{ propertyId: string }>;
 }) {
-  const { estateId } = await params;
+  const { propertyId } = use(params);
 
-  const response = await getPropertiesByEstate(estateId);
+  const { data, isLoading, isError } = useGetPropertiesUsersById(propertyId);
 
-  if (!response?.data) {
-    notFound();
+  console.log("PROPERTY RESPONSE:", data);
+  console.log("PROPERTY RESPONSE:", data);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Failed to load property.</div>;
   }
 
   return (
-    <div className="container-page py-16">
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {response.data.map((property: any) => (
-          <PropertyDetails property={response.data} />
-        ))}
-      </div>
-    </div>
+    <PropertyDetails property={data.data} estateName={data.data.estate?.name} />
   );
 }

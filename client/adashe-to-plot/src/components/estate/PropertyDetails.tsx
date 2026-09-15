@@ -13,9 +13,15 @@ import { BookInspectionButton } from "@/components/booking/BookInspectionButton"
 import { WhatsAppButton } from "@/components/booking/WhatsAppButton";
 import { Badge } from "@/components/ui/Badge";
 
-export default function PropertyDetails({ property }: { property: any }) {
-  const estateName = property.estate?.name ?? "Property";
+type PropertyDetailsProps = {
+  property: any;
+  estateName: string;
+};
 
+export default function PropertyDetails({
+  property,
+  estateName,
+}: PropertyDetailsProps) {
   const gallery = [
     property.images?.mainImgUrl,
     property.images?.image1Url,
@@ -114,6 +120,9 @@ export default function PropertyDetails({ property }: { property: any }) {
               <PaymentPlansSection
                 price={Number(property.startingPrice)}
                 rates={paymentPlans}
+                isAuthenticated={property.isAuthenticated}
+                isAtiMember={property.isAtiMember}
+                canPurchase={property.canPurchase}
               />
             </div>
           </div>

@@ -29,10 +29,11 @@ export function PropertyGrid({
   if (isLoading) {
     return <PropertyGridSkeleton />;
   }
+
   return (
     <section>
       {estate && (
-        <div className="mb-12 overflow-hidden rounded-3xl  border border-navy-800/10 bg-white">
+        <div className="mb-12 overflow-hidden rounded-3xl border border-navy-800/10 bg-white">
           {/* Estate Image */}
           {estate.mainImage && (
             <div className="relative h-64 w-full overflow-hidden sm:h-80">
@@ -75,14 +76,12 @@ export function PropertyGrid({
               </>
             )}
 
-            {/* Description */}
             {estate.description && (
-              <p className="  text-sm leading-7 text-ink-500">
+              <p className="text-sm leading-7 text-ink-500">
                 {estate.description}
               </p>
             )}
 
-            {/* Estate Stats */}
             <div className="mt-6 flex flex-wrap gap-3">
               {(estate.city || estate.state) && (
                 <div className="inline-flex items-center gap-2 rounded-xl bg-navy-50 px-4 py-3">
@@ -90,6 +89,7 @@ export function PropertyGrid({
 
                   <div>
                     <p className="text-xs text-ink-400">Location</p>
+
                     <p className="text-sm font-semibold text-navy-950">
                       {estate.city}, {estate.state}
                     </p>
@@ -103,6 +103,7 @@ export function PropertyGrid({
 
                   <div>
                     <p className="text-xs text-ink-400">Starting from</p>
+
                     <p className="text-sm font-semibold text-navy-950">
                       {formatNaira(Number(estate.startingPrice))}
                     </p>
@@ -115,6 +116,7 @@ export function PropertyGrid({
 
                 <div>
                   <p className="text-xs text-ink-400">Properties</p>
+
                   <p className="text-sm font-semibold text-navy-950">
                     {properties.length} available
                   </p>
@@ -126,7 +128,7 @@ export function PropertyGrid({
       )}
 
       {/* Properties */}
-      <div className="mx-4 l">
+      <div className="mx-4">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-navy-950">
             Available Properties

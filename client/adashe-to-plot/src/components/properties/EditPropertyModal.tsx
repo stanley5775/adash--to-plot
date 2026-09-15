@@ -206,7 +206,8 @@ export function EditPropertyModal({
                     required
                     className="w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-500/10">
                     <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Not Active</option>
+                    <option value="NON_ACTIVE">Not Active</option>
+                    <option value="SOLD_OUT">Sold Out</option>
                   </select>
                 </div>
               </div>

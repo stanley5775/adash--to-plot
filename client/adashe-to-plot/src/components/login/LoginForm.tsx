@@ -21,8 +21,7 @@ export function LoginForm() {
   const router = useRouter();
   const { mutate: loginUser, isPending } = useLogin();
   const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const searchParams = useSearchParams();
   const {
     register,
     handleSubmit,
@@ -44,17 +43,21 @@ export function LoginForm() {
       },
       {
         onSuccess: (data) => {
-          toast.success("Login successful!");
+           toast.success("Login successful!");
 
-          setUser(data.user);
+           setUser(data.user);
 
-          if (data.user.role === "ADMIN") {
-            router.push("/admin");
-          } else {
-            router.push("/dashboard");
-          }
+           const redirect = searchParams.get("redirect");
 
-          reset();
+           if (redirect) {
+             router.push(redirect);
+           } else if (data.user.role === "ADMIN") {
+             router.push("/admin");
+           } else {
+             router.push("/dashboard");
+           }
+
+           reset();
         },
 
         onError: (error) => {
