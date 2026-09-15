@@ -39,6 +39,9 @@ export const getPropertyById = async (c: Context) => {
         estate: {
           id: estateNames.id,
           name: estateNames.name,
+          accountName: estateNames.accountName,
+          accountNumber: estateNames.accountNumber,
+          bankName: estateNames.bankName,
         },
         images: propertiesImage,
       })

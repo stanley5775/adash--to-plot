@@ -7,12 +7,26 @@ import { PaymentPlanCard } from "./PaymentPlanCard";
 export function PaymentPlansSection({
   price,
   rates,
+  estate,
+  propertyLocation,
+  propertyCity,
+  propertyState,
   isAuthenticated,
   isAtiMember,
   canPurchase,
 }: {
   price: number;
   rates: PlanRate[];
+  estate: {
+    id: string;
+    name: string;
+    accountName: string | null;
+    accountNumber: string | null;
+    bankName: string | null;
+  };
+  propertyLocation?: string;
+  propertyCity?: string;
+  propertyState?: string;
   isAuthenticated: boolean;
   isAtiMember: boolean;
   canPurchase: boolean;
@@ -50,6 +64,10 @@ export function PaymentPlansSection({
             key={rate.id}
             price={price}
             rate={rate}
+            estate={estate}
+            propertyLocation={propertyLocation}
+            propertyCity={propertyCity}
+            propertyState={propertyState}
             highlight={Number(rate.interestRate) === 0}
             isAtiPlusMember={isAtiMember}
             isAuthenticated={isAuthenticated}

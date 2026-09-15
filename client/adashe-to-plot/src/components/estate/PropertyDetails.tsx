@@ -120,6 +120,10 @@ export default function PropertyDetails({
               <PaymentPlansSection
                 price={Number(property.startingPrice)}
                 rates={paymentPlans}
+                estate={property.estate}
+                propertyLocation={property.location}
+                propertyCity={property.city}
+                propertyState={property.state}
                 isAuthenticated={property.isAuthenticated}
                 isAtiMember={property.isAtiMember}
                 canPurchase={property.canPurchase}
