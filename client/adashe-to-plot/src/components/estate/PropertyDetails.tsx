@@ -118,6 +118,7 @@ export default function PropertyDetails({
 
             <div className="mt-6">
               <PaymentPlansSection
+                propertyId={property.id}
                 price={Number(property.startingPrice)}
                 rates={paymentPlans}
                 estate={property.estate}
@@ -143,12 +144,6 @@ export default function PropertyDetails({
               message={`Hello Adashè-to-Plot, I'm interested in ${estateName} and would like more information.`}
               size="lg"
             />
-
-            <a
-              href="#plots"
-              className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3.5 text-sm font-semibold text-white hover:border-white/40">
-              View Available Plots
-            </a>
           </div>
         </div>
       </div>

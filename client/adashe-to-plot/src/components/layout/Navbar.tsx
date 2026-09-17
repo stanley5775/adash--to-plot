@@ -9,7 +9,7 @@ import { useUser } from "../../../context/UserContext";
 
 const links = [
   { href: "/estates", label: "Estates" },
-  { href: "/payment-plans", label: "Payment Plans" },
+  // { href: "/payment-plans", label: "Payment Plans" },
   { href: "/application", label: "Land Application" },
   { href: "/ati-plus", label: "ATI Plus" },
   { href: "/about", label: "About" },
@@ -104,11 +104,15 @@ export function Navbar() {
             </Link>
           )}
 
-          <Link
-            href="/estates"
-            className="inline-flex items-center rounded-full bg-navy-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-800">
-            Explore Properties
-          </Link>
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:border-red-300 hover:bg-red-50">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          )}
         </div>
 
         <button
@@ -169,13 +173,6 @@ export function Navbar() {
               </button>
             )}
           </nav>
-
-          <Link
-            href="/estates"
-            onClick={() => setOpen(false)}
-            className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-navy-950 px-5 py-3 text-sm font-semibold text-white">
-            Explore Properties
-          </Link>
         </div>
       )}
     </header>

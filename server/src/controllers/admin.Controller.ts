@@ -7,13 +7,17 @@ import {
   propertiesImage,
   PropertyPaymentPlan,
   estateNames,
+  notifications,
   users,
   atiMemberships,
   applicationSchema,
+  propertyPurchases,
+  propertyInstallments,
+  propertyPaymentVerifications,
 } from "../db/schema";
 import { createEstateSchema } from "../validators/estateV";
 import { uploadImage } from "../services/uploadImage";
-import { and, eq, ne, desc, asc } from "drizzle-orm";
+import { and, eq, ne, desc, asc, or } from "drizzle-orm";
 import { createPropertyPaymentPlansSchema } from "../validators/propertyPlan";
 import { createEstateNameSchema } from "../validators/createEstate";
 import { deleteImage } from "../utils/deleteImage";
@@ -1946,6 +1950,591 @@ export const deletePropertyPaymentPlan = async (c: Context) => {
       {
         success: false,
         message: "Failed to delete payment plan",
+      },
+      500,
+    );
+  }
+};
+
+export const getAllPropertyPaymentVerifications = async (c: Context) => {
+  try {
+    const verifications = await db
+      .select({
+        verification: propertyPaymentVerifications,
+
+        customer: {
+          id: users.id,
+          fullName: users.full_name,
+          email: users.email,
+          phoneNumber: users.phone_number,
+        },
+
+        purchase: propertyPurchases,
+
+        property: properties,
+
+        estate: {
+          id: estateNames.id,
+          name: estateNames.name,
+          accountName: estateNames.accountName,
+          accountNumber: estateNames.accountNumber,
+          bankName: estateNames.bankName,
+        },
+
+        paymentPlan: PropertyPaymentPlan,
+      })
+      .from(propertyPaymentVerifications)
+      .innerJoin(users, eq(propertyPaymentVerifications.userId, users.id))
+      .innerJoin(
+        propertyPurchases,
+        eq(propertyPaymentVerifications.purchaseId, propertyPurchases.id),
+      )
+      .innerJoin(properties, eq(propertyPurchases.propertyId, properties.id))
+      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
+      .innerJoin(
+        PropertyPaymentPlan,
+        eq(propertyPurchases.paymentPlanId, PropertyPaymentPlan.id),
+      )
+      .where(eq(propertyPaymentVerifications.status, "PENDING"))
+      .orderBy(desc(propertyPaymentVerifications.createdAt));
+    console.log("PENDING VERIFICATIONS:", verifications);
+    return c.json({
+      success: true,
+      message: "Pending payment verifications fetched successfully",
+      data: verifications,
+    });
+  } catch (error) {
+    console.error("GET PROPERTY PAYMENT VERIFICATIONS ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch payment verifications",
+      },
+      500,
+    );
+  }
+};
+
+export const approvePropertyPayment = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const adminId = authUser.id;
+    const verificationId = c.req.param("verificationId");
+
+    if (!verificationId) {
+      return c.json(
+        {
+          success: false,
+          message: "Verification ID is required",
+        },
+        400,
+      );
+    }
+
+    /**
+     * 1. Get payment verification
+     */
+    const [verification] = await db
+      .select()
+      .from(propertyPaymentVerifications)
+      .where(eq(propertyPaymentVerifications.id, verificationId))
+      .limit(1);
+
+    if (!verification) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment verification not found",
+        },
+        404,
+      );
+    }
+
+    /**
+     * 2. Only pending verification can be approved
+     */
+    if (verification.status !== "PENDING") {
+      return c.json(
+        {
+          success: false,
+          message: "This payment has already been reviewed",
+        },
+        409,
+      );
+    }
+
+    /**
+     * 3. Get purchase
+     */
+    const [purchase] = await db
+      .select()
+      .from(propertyPurchases)
+      .where(eq(propertyPurchases.id, verification.purchaseId))
+      .limit(1);
+
+    if (!purchase) {
+      return c.json(
+        {
+          success: false,
+          message: "Property purchase not found",
+        },
+        404,
+      );
+    }
+
+    /**
+     * 4. Do not approve payments for cancelled/completed purchases
+     */
+    if (purchase.status === "CANCELLED" || purchase.status === "COMPLETED") {
+      return c.json(
+        {
+          success: false,
+          message: `Cannot approve payment for a ${purchase.status.toLowerCase()} purchase`,
+        },
+        409,
+      );
+    }
+
+    /**
+     * 5. Payment amount
+     */
+    const paymentAmount = Number(verification.amount);
+    const currentAmountPaid = Number(purchase.amountPaid);
+    const currentBalance = Number(purchase.balance);
+
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+      return c.json(
+        {
+          success: false,
+          message: "Invalid payment amount",
+        },
+        400,
+      );
+    }
+
+    if (!Number.isFinite(currentBalance) || currentBalance < 0) {
+      return c.json(
+        {
+          success: false,
+          message: "Invalid purchase balance",
+        },
+        400,
+      );
+    }
+
+    /**
+     * 6. Never allow payment to exceed balance
+     */
+    if (paymentAmount > currentBalance) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment amount exceeds the outstanding balance",
+        },
+        400,
+      );
+    }
+
+    /**
+     * 7. Calculate new totals
+     */
+    const newAmountPaid = Number(
+      (currentAmountPaid + paymentAmount).toFixed(2),
+    );
+
+    const newBalance = Number(
+      Math.max(currentBalance - paymentAmount, 0).toFixed(2),
+    );
+
+    /**
+     * 8. Determine new purchase status
+     */
+    const newPurchaseStatus = newBalance <= 0 ? "COMPLETED" : "ACTIVE";
+
+    /**
+     * 9. Approve verification
+     */
+    const [updatedVerification] = await db
+      .update(propertyPaymentVerifications)
+      .set({
+        status: "APPROVED",
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(propertyPaymentVerifications.id, verificationId))
+      .returning();
+
+    if (!updatedVerification) {
+      return c.json(
+        {
+          success: false,
+          message: "Failed to approve payment",
+        },
+        500,
+      );
+    }
+
+    /**
+     * 10. Update purchase
+     */
+    const [updatedPurchase] = await db
+      .update(propertyPurchases)
+      .set({
+        amountPaid: newAmountPaid.toFixed(2),
+        balance: newBalance.toFixed(2),
+        status: newPurchaseStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(propertyPurchases.id, purchase.id))
+      .returning();
+
+    if (!updatedPurchase) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment approved but failed to update purchase",
+        },
+        500,
+      );
+    }
+
+    /**
+     * 11. If this is an installment payment,
+     * mark the next pending installment as PAID.
+     */
+    if (purchase.durationMonths && purchase.durationMonths > 0) {
+      const [nextInstallment] = await db
+        .select()
+        .from(propertyInstallments)
+        .where(
+          and(
+            eq(propertyInstallments.purchaseId, purchase.id),
+            eq(propertyInstallments.status, "PENDING"),
+          ),
+        )
+        .orderBy(asc(propertyInstallments.installmentNumber))
+        .limit(1);
+
+      if (nextInstallment) {
+        await db
+          .update(propertyInstallments)
+          .set({
+            status: "PAID",
+            paidAt: new Date(),
+            paymentReference: verification.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(propertyInstallments.id, nextInstallment.id));
+      }
+    }
+
+    /**
+     * 12. Get customer + property + estate
+     */
+    const [purchaseData] = await db
+      .select({
+        customer: {
+          id: users.id,
+          fullName: users.full_name,
+          email: users.email,
+        },
+
+        property: {
+          location: properties.location,
+        },
+
+        estate: {
+          name: estateNames.name,
+        },
+      })
+      .from(propertyPurchases)
+      .innerJoin(users, eq(propertyPurchases.userId, users.id))
+      .innerJoin(properties, eq(propertyPurchases.propertyId, properties.id))
+      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
+      .where(eq(propertyPurchases.id, purchase.id))
+      .limit(1);
+
+    /**
+     * 13. Notification + email
+     */
+    if (purchaseData) {
+      try {
+        await db.insert(notifications).values({
+          userId: purchaseData.customer.id,
+          type: "PAYMENT_SUCCESS",
+          title: "Property Payment Approved",
+          message:
+            newBalance <= 0
+              ? `Your payment of ₦${paymentAmount.toLocaleString(
+                  "en-NG",
+                )} for ${
+                  purchaseData.estate.name
+                } has been approved successfully. Your property purchase has now been fully paid.`
+              : `Your payment of ₦${paymentAmount.toLocaleString(
+                  "en-NG",
+                )} for ${
+                  purchaseData.estate.name
+                } has been approved successfully. Your remaining balance is ₦${newBalance.toLocaleString(
+                  "en-NG",
+                )}.`,
+          isRead: false,
+        });
+      } catch (notificationError) {
+        console.error(
+          "PROPERTY PAYMENT APPROVAL NOTIFICATION ERROR:",
+          notificationError,
+        );
+      }
+
+      try {
+        await STMPservice.propertyPaymentApproved(
+          {
+            full_name: purchaseData.customer.fullName,
+            email: purchaseData.customer.email,
+          },
+          {
+            propertyLocation: purchaseData.property.location,
+            estateName: purchaseData.estate.name,
+            amount: paymentAmount,
+            amountPaid: newAmountPaid,
+            balance: newBalance,
+            verificationId: verification.id,
+          },
+        );
+      } catch (emailError) {
+        console.error("PROPERTY PAYMENT APPROVAL EMAIL ERROR:", emailError);
+      }
+    }
+
+    /**
+     * 14. Return
+     */
+    return c.json({
+      success: true,
+      message: "Payment approved successfully",
+      data: {
+        verification: updatedVerification,
+        purchase: updatedPurchase,
+      },
+    });
+  } catch (error) {
+    console.error("APPROVE PROPERTY PAYMENT ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to approve payment",
+      },
+      500,
+    );
+  }
+};
+
+export const rejectPropertyPayment = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const adminId = authUser.id;
+    const verificationId = c.req.param("verificationId");
+
+    if (!verificationId) {
+      return c.json(
+        {
+          success: false,
+          message: "Verification ID is required",
+        },
+        400,
+      );
+    }
+
+    const body = await c.req.json();
+
+    const rejectionReason =
+      typeof body.rejectionReason === "string"
+        ? body.rejectionReason.trim()
+        : "";
+
+    if (!rejectionReason) {
+      return c.json(
+        {
+          success: false,
+          message: "Rejection reason is required",
+        },
+        400,
+      );
+    }
+
+    // 1. Get payment verification
+    const [verification] = await db
+      .select()
+      .from(propertyPaymentVerifications)
+      .where(eq(propertyPaymentVerifications.id, verificationId))
+      .limit(1);
+
+    if (!verification) {
+      return c.json(
+        {
+          success: false,
+          message: "Payment verification not found",
+        },
+        404,
+      );
+    }
+
+    // 2. Make sure it has not already been reviewed
+    if (verification.status !== "PENDING") {
+      return c.json(
+        {
+          success: false,
+          message: "This payment has already been reviewed",
+        },
+        409,
+      );
+    }
+
+    // 3. Get the purchase
+    const [purchase] = await db
+      .select()
+      .from(propertyPurchases)
+      .where(eq(propertyPurchases.id, verification.purchaseId))
+      .limit(1);
+
+    if (!purchase) {
+      return c.json(
+        {
+          success: false,
+          message: "Property purchase not found",
+        },
+        404,
+      );
+    }
+
+    // 4. Reject the verification
+    const [updatedVerification] = await db
+      .update(propertyPaymentVerifications)
+      .set({
+        status: "REJECTED",
+        rejectionReason,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(propertyPaymentVerifications.id, verificationId))
+      .returning();
+
+    if (!updatedVerification) {
+      return c.json(
+        {
+          success: false,
+          message: "Failed to reject payment",
+        },
+        500,
+      );
+    }
+
+    // 5. If this is the initial purchase and it is still PENDING,
+    // cancel the purchase so the customer can start a new one.
+    //
+    // IMPORTANT:
+    // Do NOT cancel ACTIVE purchases.
+    // An ACTIVE purchase may already have approved installment payments.
+    if (purchase.status === "PENDING") {
+      await db
+        .update(propertyPurchases)
+        .set({
+          status: "CANCELLED",
+          updatedAt: new Date(),
+        })
+        .where(eq(propertyPurchases.id, purchase.id));
+    }
+
+    // 6. Get customer/property information for notification/email
+    const [purchaseData] = await db
+      .select({
+        customer: {
+          id: users.id,
+          fullName: users.full_name,
+          email: users.email,
+        },
+        property: {
+          location: properties.location,
+        },
+        estate: {
+          name: estateNames.name,
+        },
+      })
+      .from(propertyPurchases)
+      .innerJoin(users, eq(propertyPurchases.userId, users.id))
+      .innerJoin(properties, eq(propertyPurchases.propertyId, properties.id))
+      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
+      .where(eq(propertyPurchases.id, verification.purchaseId))
+      .limit(1);
+
+    if (purchaseData) {
+      // Notification
+      await db.insert(notifications).values({
+        userId: purchaseData.customer.id,
+        type: "PAYMENT_FAILED",
+        title: "Payment Rejected",
+        message: `Your payment for ${purchaseData.estate.name} has been rejected. Reason: ${rejectionReason}`,
+        createdAt: new Date(),
+      });
+
+      // Email
+      await STMPservice.propertyPaymentRejected(
+        {
+          full_name: purchaseData.customer.fullName,
+          email: purchaseData.customer.email,
+        },
+        {
+          propertyLocation: purchaseData.property.location,
+          estateName: purchaseData.estate.name,
+          amount: Number(verification.amount),
+          rejectionReason,
+          verificationId: verification.id,
+        },
+      );
+    }
+
+    return c.json({
+      success: true,
+      message: "Payment rejected successfully",
+      data: {
+        verification: updatedVerification,
+        purchaseStatus:
+          purchase.status === "PENDING" ? "CANCELLED" : purchase.status,
+      },
+    });
+  } catch (error) {
+    console.error("REJECT PROPERTY PAYMENT ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to reject payment",
       },
       500,
     );

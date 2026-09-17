@@ -14,6 +14,9 @@ import {
   getAllApplicants,
   getPropertyPaymentPlans,
   deletePropertyPaymentPlan,
+  GetAllPayment,
+  RejectPayment,
+  ApprovePayment,
 } from "../api/admin";
 import { useQuery } from "@tanstack/react-query";
 
@@ -204,6 +207,49 @@ export const useDeletePropertyPaymentPlan = () => {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["propertyPaymentPlans", variables.propertyId],
+      });
+    },
+  });
+};
+
+export const useGetAllPayment = () => {
+  return useQuery({
+    queryKey: ["admin-payment-verifications"],
+    queryFn: GetAllPayment,
+  });
+};
+
+// Approve payment
+export const useApprovePayment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (verificationId: string) => ApprovePayment(verificationId),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-payment-verifications"],
+      });
+    },
+  });
+};
+
+// Reject payment
+export const useRejectPayment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      verificationId,
+      rejectionReason,
+    }: {
+      verificationId: string;
+      rejectionReason: string;
+    }) => RejectPayment(verificationId, rejectionReason),
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin-payment-verifications"],
       });
     },
   });

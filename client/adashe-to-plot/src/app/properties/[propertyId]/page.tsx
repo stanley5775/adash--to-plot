@@ -4,6 +4,7 @@ import { use } from "react";
 
 import { useGetPropertiesUsersById } from "../../../../hook/estates";
 import PropertyDetails from "@/components/estate/PropertyDetails";
+import { PropertyDetailsSkeleton } from "../../../../helper/PropertyDetailsSkeleton";
 
 export default function EstateDetailsPage({
   params,
@@ -14,11 +15,9 @@ export default function EstateDetailsPage({
 
   const { data, isLoading, isError } = useGetPropertiesUsersById(propertyId);
 
-  console.log("PROPERTY RESPONSE:", data);
-  console.log("PROPERTY RESPONSE:", data);
-
+  console.log("data", data);
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <PropertyDetailsSkeleton />;
   }
 
   if (isError) {

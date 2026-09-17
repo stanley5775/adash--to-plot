@@ -1,92 +1,118 @@
 "use client";
 
-import { Eye } from "lucide-react";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import Link from "next/link";
+import { Eye, FileText, CalendarDays } from "lucide-react";
 
-export default function DashboardApplicationsPage() {
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { Badge, statusToTone } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useGetMyApplicationHistory } from "../../../../hook/users";
+
+export default function ApplicationHistoryPage() {
+  const { data, isLoading, isError } = useGetMyApplicationHistory();
+
+  const applications = data?.data?.applications ?? [];
+
   return (
     <div className="space-y-8">
-      <DashboardHeader
-        title="Application"
-        subtitle="View your land application and payment history."
-      />
+      <DashboardHeader title="Application History" />
 
-      {/* View Application */}
-      <div>
-        <h3 className="text-base font-bold text-navy-950">View Application</h3>
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-28 animate-pulse rounded-2xl bg-navy-50"
+            />
+          ))}
+        </div>
+      ) : isError ? (
+        <EmptyState
+          title="Unable to load applications"
+          description="Something went wrong while loading your application history."
+        />
+      ) : applications.length === 0 ? (
+        <EmptyState
+          title="No applications yet"
+          description="You have not submitted any land applications yet."
+        />
+      ) : (
+        <div className="space-y-4">
+          {applications.map((application: any) => (
+            <div
+              key={application.id}
+              className="rounded-2xl border border-navy-800/10 bg-white p-5">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy-50">
+                    <FileText className="h-5 w-5 text-navy-900" />
+                  </div>
 
-        <div className="mt-4 rounded-2xl border border-navy-800/10 bg-white p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gold-600">
-                APP-001234
-              </p>
+                  <div>
+                    <h3 className="font-bold text-navy-950">
+                      {application.estate}
+                    </h3>
 
-              <h4 className="mt-1 text-lg font-bold text-navy-950">
-                Premium Residential Plot
-              </h4>
+                    <p className="mt-1 text-sm text-ink-500">
+                      {application.surname} {application.firstName}
+                      {application.middleName
+                        ? ` ${application.middleName}`
+                        : ""}
+                    </p>
 
-              <p className="mt-1 text-sm text-ink-500">
-                Adashè Estate — Plot 24
-              </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-500">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        {formatDate(application.createdAt)}
+                      </span>
 
-              <p className="mt-1 text-sm text-ink-500">
-                Application Date: September 01, 2026
-              </p>
+                      <span>•</span>
+
+                      <span>{application.plotSize}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Badge
+                    tone={statusToTone(
+                      formatApplicationStatus(application.status),
+                    )}>
+                    {formatApplicationStatus(application.status)}
+                  </Badge>
+
+                  <Link
+                    href={`/dashboard/applications/${application.id}`}
+                    className="inline-flex items-center gap-2 rounded-xl bg-navy-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+                    <Eye className="h-4 w-4" />
+                    View
+                  </Link>
+                </div>
+              </div>
             </div>
-
-            <button
-              type="button"
-              className="flex w-fit items-center gap-2 rounded-xl border border-navy-800/10 px-4 py-2.5 text-sm font-semibold text-navy-700 transition-colors hover:bg-navy-50">
-              <Eye className="h-4 w-4" />
-              View Application
-            </button>
-          </div>
+          ))}
         </div>
-      </div>
-
-      {/* Application Payment History */}
-      <div>
-        <h3 className="text-base font-bold text-navy-950">
-          Application Payment History
-        </h3>
-
-        <div className="mt-4 overflow-hidden rounded-2xl border border-navy-800/10 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-navy-800/10 bg-navy-50">
-                  <th className="px-5 py-3 font-semibold text-ink-700">Date</th>
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Description
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Amount
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Reference
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr className="border-b border-navy-800/5">
-                  <td className="px-5 py-3.5 text-ink-700">Sep 01, 2026</td>
-                  <td className="px-5 py-3.5 text-ink-700">Initial Payment</td>
-                  <td className="px-5 py-3.5 font-semibold text-navy-950">
-                    ₦2,000,000
-                  </td>
-                  <td className="px-5 py-3.5 text-green-600">Paid</td>
-                  <td className="px-5 py-3.5 text-ink-500">PAY-001234</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
+}
+
+function formatDate(date: string | null | undefined) {
+  if (!date) return "—";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(new Date(date));
+}
+
+function formatApplicationStatus(status: string | null | undefined) {
+  if (!status) return "Pending";
+
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }

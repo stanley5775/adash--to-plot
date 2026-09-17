@@ -198,7 +198,7 @@ export function Property() {
       {/* Total Plots */}
       <div>
         <Input
-          label="Total Plots"
+          label=" Plot size"
           id="totalPlots"
           type="number"
           placeholder="120"

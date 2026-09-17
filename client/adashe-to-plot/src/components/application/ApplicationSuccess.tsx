@@ -22,7 +22,7 @@ export default function ApplicationSuccess({
         <CheckCircle2 className="h-14 w-14 text-status-available" />
 
         <h2 className="text-2xl font-bold text-navy-950">
-          🎉 Application Submitted Successfully
+          Application Submitted Successfully
         </h2>
 
         <p className="max-w-md text-sm text-ink-500">
@@ -36,7 +36,7 @@ export default function ApplicationSuccess({
               Application Number
             </p>
 
-            <p className="break-all font-bold text-navy-950">
+            <p className="break-all text-xs font-bold text-navy-950">
               {applicationId || "—"}
             </p>
           </div>
@@ -46,7 +46,7 @@ export default function ApplicationSuccess({
               Payment
             </p>
 
-            <p className="font-bold text-navy-950">
+            <p className="font-bold text-xs text-navy-950">
               ₦{LAND_APPLICATION_FEE.toLocaleString()}
             </p>
           </div>
@@ -64,13 +64,11 @@ export default function ApplicationSuccess({
               Reference
             </p>
 
-            <p className="truncate font-bold text-navy-950">
+            <p className="truncate text-xs font-bold text-navy-950">
               {paymentReference || "—"}
             </p>
           </div>
         </div>
-
-        <Button onClick={onBack}>Back to Application</Button>
 
         <p className="flex items-center gap-1.5 text-xs text-ink-400">
           <ShieldCheck className="h-3.5 w-3.5" />

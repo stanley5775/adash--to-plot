@@ -40,8 +40,8 @@ export function PropertyCard({
 
         <div className="flex items-center gap-2 text-sm text-ink-500">
           <Ruler className="h-4 w-4" />
-          Plot
-          <span>{property.totalPlots || "Plot"}</span>
+
+          <span>{property.totalPlots || "sqm"}sqm</span>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-ink-500">

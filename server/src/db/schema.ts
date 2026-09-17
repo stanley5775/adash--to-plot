@@ -30,10 +30,10 @@ export const propertyStatusEnum = pgEnum("property_status", [
   "SOLD_OUT",
 ]);
 
-export const paymentPlanStatusEnum = pgEnum("payment_plan_status", [
-  "ACTIVE",
-  "INACTIVE",
-]);
+// export const paymentPlanStatusEnum = pgEnum("payment_plan_status", [
+//   "ACTIVE",
+//   "INACTIVE",
+// ]);
 
 export const purchaseStatusEnum = pgEnum("purchase_status", [
   "PENDING",
@@ -538,8 +538,6 @@ export const atiMembershipPayments = pgTable(
   ],
 );
 
-//    NOTIFICATIONS
-
 export const notifications = pgTable(
   "notifications",
   {
@@ -597,61 +595,6 @@ export const sessions = pgTable(
   ],
 );
 
-export const paymentPlans = pgTable(
-  "payment_plans",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    propertyId: uuid("property_id")
-      .notNull()
-      .references(() => properties.id, {
-        onDelete: "cascade",
-      }),
-
-    // Outright, 6 Months, 12 Months, etc.
-    name: text("name").notNull(),
-
-    // 0 for outright
-    durationMonths: integer("duration_months").notNull(),
-
-    interestPercentage: numeric("interest_percentage", {
-      precision: 5,
-      scale: 2,
-    })
-      .notNull()
-      .default("0"),
-
-    // For outright = full payment
-    // For installment = monthly payment
-    paymentAmount: integer("payment_amount").notNull(),
-
-    totalPayable: integer("total_payable").notNull(),
-
-    status: paymentPlanStatusEnum("status").notNull().default("ACTIVE"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index("payment_plans_property_idx").on(table.propertyId),
-    index("payment_plans_status_idx").on(table.status),
-
-    unique("payment_plan_property_name_unique").on(
-      table.propertyId,
-      table.name,
-    ),
-  ],
-);
-
 export const propertyPurchases = pgTable(
   "property_purchases",
   {
@@ -671,25 +614,38 @@ export const propertyPurchases = pgTable(
 
     paymentPlanId: uuid("payment_plan_id")
       .notNull()
-      .references(() => paymentPlans.id, {
+      .references(() => PropertyPaymentPlan.id, {
         onDelete: "restrict",
       }),
 
-    // Price at the time customer purchased
-    propertyPrice: integer("property_price").notNull(),
+    propertyPrice: numeric("property_price", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
-    // Total amount customer agreed to pay
-    totalPayable: integer("total_payable").notNull(),
+    totalPayable: numeric("total_payable", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
-    // How much has been successfully paid
-    amountPaid: integer("amount_paid").notNull().default(0),
+    amountPaid: numeric("amount_paid", {
+      precision: 15,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
 
-    // Remaining amount
-    balance: integer("balance").notNull(),
+    balance: numeric("balance", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
     durationMonths: integer("duration_months").notNull(),
 
-    paymentAmount: integer("payment_amount"),
+    paymentAmount: numeric("payment_amount", {
+      precision: 15,
+      scale: 2,
+    }),
 
     interestPercentage: numeric("interest_percentage", {
       precision: 5,
@@ -714,11 +670,8 @@ export const propertyPurchases = pgTable(
   },
   (table) => [
     index("property_purchases_user_idx").on(table.userId),
-
     index("property_purchases_property_idx").on(table.propertyId),
-
     index("property_purchases_plan_idx").on(table.paymentPlanId),
-
     index("property_purchases_status_idx").on(table.status),
   ],
 );
@@ -736,7 +689,10 @@ export const propertyInstallments = pgTable(
 
     installmentNumber: integer("installment_number").notNull(),
 
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
     dueDate: timestamp("due_date", {
       withTimezone: true,
@@ -762,12 +718,9 @@ export const propertyInstallments = pgTable(
       .notNull()
       .defaultNow(),
   },
-
   (table) => [
     index("property_installments_purchase_idx").on(table.purchaseId),
-
     index("property_installments_status_idx").on(table.status),
-
     index("property_installments_due_date_idx").on(table.dueDate),
 
     unique("purchase_installment_unique").on(
@@ -831,53 +784,10 @@ export const payments = pgTable(
     index("payments_status_idx").on(table.status),
   ],
 );
-export const paymentPlanInstallments = pgTable(
-  "payment_plan_installments",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-
-    paymentPlanId: uuid("payment_plan_id")
-      .notNull()
-      .references(() => paymentPlans.id, {
-        onDelete: "cascade",
-      }),
-
-    installmentNumber: integer("installment_number").notNull(),
-
-    amount: integer("amount").notNull(),
-
-    dueDate: timestamp("due_date", {
-      withTimezone: true,
-    }).notNull(),
-
-    description: text("description"),
-
-    createdAt: timestamp("created_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-
-    updatedAt: timestamp("updated_at", {
-      withTimezone: true,
-    })
-      .notNull()
-      .defaultNow(),
-  },
-
-  (table) => [
-    index("plan_installments_plan_idx").on(table.paymentPlanId),
-
-    unique("plan_installment_number_unique").on(
-      table.paymentPlanId,
-      table.installmentNumber,
-    ),
-  ],
-);
 
 export const propertyPaymentVerificationStatusEnum = pgEnum(
   "property_payment_verification_status",
-  ["PENDING", "APPROVED", "REJECTED"],
+  ["PENDING", "APPROVED", "REJECTED", "CANCELLED"],
 );
 
 export const propertyPaymentVerifications = pgTable(
@@ -897,7 +807,10 @@ export const propertyPaymentVerifications = pgTable(
         onDelete: "restrict",
       }),
 
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
 
     receiptUrl: text("receipt_url").notNull(),
 

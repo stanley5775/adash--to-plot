@@ -12,10 +12,16 @@ import {
   X,
 } from "lucide-react";
 
+useCreatePropertyPurchase;
 import type { PlanRate } from "@/types/payment-plan";
 import { formatNaira } from "@/lib/payment";
 import { Badge } from "@/components/ui/Badge";
 import { useRouter } from "next/navigation";
+import {
+  useCreatePropertyPurchase,
+  useSubmitPropertyPaymentReceipt,
+} from "../../../hook/property-payment";
+import toast from "react-hot-toast";
 
 type EstatePaymentInfo = {
   id: string;
@@ -27,6 +33,7 @@ type EstatePaymentInfo = {
 
 export function PaymentPlanCard({
   price,
+  existingPurchaseId,
   rate,
   estate,
   propertyLocation,
@@ -37,6 +44,7 @@ export function PaymentPlanCard({
   isAuthenticated,
   canPurchase,
 }: {
+  existingPurchaseId: any;
   price: number;
   rate: PlanRate;
   estate: EstatePaymentInfo;
@@ -51,20 +59,22 @@ export function PaymentPlanCard({
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [receipt, setReceipt] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
+  const totalPayable = Number(rate.totalAmount);
+  const originalTotal = Number(rate.originalTotalAmount);
+  const createPurchase = useCreatePropertyPurchase();
+  const submitReceipt = useSubmitPropertyPaymentReceipt();
+  const monthlyAmount =
+    rate.monthlyAmount !== null ? Number(rate.monthlyAmount) : null;
+
+  const originalMonthlyAmount =
+    rate.originalMonthlyAmount !== null
+      ? Number(rate.originalMonthlyAmount)
+      : null;
+
+  const discountAmount = Number(rate.discountAmount ?? 0);
+  const discountPercentage = Number(rate.discountPercentage ?? 0);
 
   const interestRate = Number(rate.interestRate);
-
-  const totalPayable = Number(rate.totalAmount);
-
-  const originalTotal = Number(
-    rate.originalTotalAmount ?? rate.totalAmount,
-  );
-
-  const discountAmount = Number(rate.atiDiscountAmount ?? 0);
-
-  const monthlyAmount = rate.monthlyAmount
-    ? Number(rate.monthlyAmount)
-    : null;
 
   const isOutright = rate.durationMonths === null;
 
@@ -75,9 +85,7 @@ export function PaymentPlanCard({
     if (!isAuthenticated) {
       const redirectUrl = `/properties/${rate.propertyId}`;
 
-      router.push(
-        `/login?redirect=${encodeURIComponent(redirectUrl)}`,
-      );
+      router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
 
       return;
     }
@@ -103,26 +111,62 @@ export function PaymentPlanCard({
     }, 2000);
   };
 
-  const handleReceiptChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleReceiptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
     setReceipt(file);
   };
+  const handleSubmitReceipt = async () => {
+    if (!receipt) {
+      toast.error("Please upload your payment receipt.");
+      return;
+    }
 
-  const handleSubmitReceipt = () => {
-    if (!receipt) return;
+    try {
+      /**
+       * IMPORTANT:
+       *
+       * If the user already has an ACTIVE/PENDING purchase,
+       * reuse that purchase.
+       *
+       * Only create a new purchase when there is no existing purchase.
+       */
+      let purchaseId = existingPurchaseId ?? null;
 
-    // TODO:
-    // Send propertyId, planId and receipt to backend.
-    console.log({
-      propertyId: rate.propertyId,
-      paymentPlanId: rate.id,
-      receipt,
-    });
+      if (!purchaseId) {
+        const purchaseResponse = await createPurchase.mutateAsync({
+          propertyId: rate.propertyId,
+          paymentPlanId: rate.id,
+        });
+
+        purchaseId = purchaseResponse.data.purchase.id;
+      }
+
+      if (!purchaseId) {
+        throw new Error("Unable to determine purchase.");
+      }
+
+      await submitReceipt.mutateAsync({
+        purchaseId,
+        amount: isOutright ? totalPayable : (monthlyAmount ?? 0),
+        receipt,
+      });
+
+      setReceipt(null);
+      setShowPurchaseModal(false);
+
+      toast.success("Payment receipt submitted successfully");
+    } catch (error) {
+      console.error("PROPERTY PURCHASE ERROR:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again.",
+      );
+    }
   };
 
   return (
@@ -302,10 +346,10 @@ export function PaymentPlanCard({
                       <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-500">
                         <MapPin className="h-3.5 w-3.5" />
 
-                        <span>
-                          {propertyLocation
-                            ? propertyLocation
-                            : `${propertyCity ?? ""}, ${propertyState ?? ""}`}
+                        <span className="text-2xl font-bold text-navy-950">
+                          {formatNaira(
+                            isOutright ? totalPayable : (monthlyAmount ?? 0),
+                          )}
                         </span>
                       </div>
                     )}
@@ -357,7 +401,9 @@ export function PaymentPlanCard({
                   </span>
 
                   <span className="text-2xl font-bold text-navy-950">
-                    {formatNaira(totalPayable)}
+                    {formatNaira(
+                      isOutright ? totalPayable : (monthlyAmount ?? 0),
+                    )}
                   </span>
                 </div>
               </div>
@@ -493,9 +539,20 @@ export function PaymentPlanCard({
               <button
                 type="button"
                 onClick={handleSubmitReceipt}
-                disabled={!receipt}
-                className="w-full rounded-full bg-navy-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-navy-900 disabled:cursor-not-allowed disabled:opacity-40">
-                Submit Receipt for Verification
+                disabled={
+                  !receipt ||
+                  createPurchase.isPending ||
+                  submitReceipt.isPending
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-navy-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-navy-900 disabled:cursor-not-allowed disabled:opacity-40">
+                {createPurchase.isPending || submitReceipt.isPending ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Processing...
+                  </>
+                ) : (
+                  "Submit Receipt for Verification"
+                )}
               </button>
 
               <p className="mt-2 text-center text-[11px] text-ink-400">

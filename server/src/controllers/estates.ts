@@ -12,10 +12,8 @@ import {
   estateNames,
   propertiesImage,
   atiMemberships,
-  paymentPlans,
   PropertyPaymentPlan,
 } from "../db/schema";
-
 export const getPropertyById = async (c: Context) => {
   try {
     const propertyId = c.req.param("propertyId");
@@ -32,7 +30,6 @@ export const getPropertyById = async (c: Context) => {
     }
 
     // GET PROPERTY
-
     const [property] = await db
       .select({
         property: properties,
@@ -63,7 +60,6 @@ export const getPropertyById = async (c: Context) => {
     }
 
     // OPTIONAL AUTHENTICATION
-
     let isAuthenticated = false;
     let userId: string | null = null;
 
@@ -84,13 +80,11 @@ export const getPropertyById = async (c: Context) => {
           userId = tokenUserId;
         }
       } catch {
-        // Access token invalid/expired.
-        // Try refresh token below.
+        // Invalid/expired access token.
       }
     }
 
     // TRY REFRESH TOKEN
-
     if (!isAuthenticated) {
       const refreshToken = getCookie(c, "refreshToken");
 
@@ -153,12 +147,13 @@ export const getPropertyById = async (c: Context) => {
           }
         } catch {
           // Invalid refresh token.
-          // Treat as visitor.
         }
       }
     }
 
+    // ============================================================
     // CHECK ATI MEMBERSHIP
+    // ============================================================
 
     let isAtiMember = false;
 
@@ -184,14 +179,12 @@ export const getPropertyById = async (c: Context) => {
     }
 
     // CAN PURCHASE
-    // ATI IS NOT REQUIRED.
-    // User only needs to be logged in
-    // and property must be ACTIVE.
-
     const canPurchase =
       isAuthenticated && property.property.status === "ACTIVE";
 
+    // ============================================================
     // GET PAYMENT PLANS
+    // ============================================================
 
     const rawPaymentPlans =
       property.property.status === "ACTIVE"
@@ -201,27 +194,41 @@ export const getPropertyById = async (c: Context) => {
             .where(eq(PropertyPaymentPlan.propertyId, propertyId))
         : [];
 
-    // CALCULATE PRICES
+    // ============================================================
+    // CALCULATE FINAL PRICES ON BACKEND
+    // ============================================================
 
     const paymentPlans = rawPaymentPlans.map((plan) => {
       const originalTotalAmount = Number(plan.totalAmount);
+
       const originalMonthlyAmount = plan.monthlyAmount
         ? Number(plan.monthlyAmount)
         : null;
 
-      const discountAmount = isAtiMember ? originalTotalAmount * 0.05 : 0;
+      const discountPercentage = isAtiMember ? 5 : 0;
 
-      const totalAmount = originalTotalAmount - discountAmount;
+      const discountAmount = Number(
+        (originalTotalAmount * (discountPercentage / 100)).toFixed(2),
+      );
+
+      const totalAmount = Number(
+        (originalTotalAmount - discountAmount).toFixed(2),
+      );
 
       const monthlyAmount =
         plan.durationMonths && plan.durationMonths > 0
-          ? totalAmount / plan.durationMonths
+          ? Number((totalAmount / plan.durationMonths).toFixed(2))
           : null;
 
       return {
         ...plan,
 
-        // Original price
+        // Backend-calculated final prices
+        totalAmount: totalAmount.toFixed(2),
+
+        monthlyAmount: monthlyAmount !== null ? monthlyAmount.toFixed(2) : null,
+
+        // Original plan values
         originalTotalAmount: originalTotalAmount.toFixed(2),
 
         originalMonthlyAmount:
@@ -229,19 +236,12 @@ export const getPropertyById = async (c: Context) => {
             ? originalMonthlyAmount.toFixed(2)
             : null,
 
-        // ACTUAL USER PRICE
-        totalAmount: totalAmount.toFixed(2),
+        // Discount information
+        discountAmount: discountAmount.toFixed(2),
 
-        monthlyAmount: monthlyAmount !== null ? monthlyAmount.toFixed(2) : null,
-
-        // ATI information
-        atiDiscountAmount: discountAmount.toFixed(2),
-
-        atiDiscountPercentage: isAtiMember ? 5 : 0,
+        discountPercentage,
       };
     });
-
-    // RESPONSE
 
     return c.json(
       {
@@ -273,7 +273,6 @@ export const getPropertyById = async (c: Context) => {
             : null,
 
           isAuthenticated,
-          isAtiMember,
           canPurchase,
 
           paymentPlans,

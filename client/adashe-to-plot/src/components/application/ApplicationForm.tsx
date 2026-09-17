@@ -100,7 +100,7 @@ export default function ApplicationForm({ onSuccess }: ApplicationFormProps) {
     isLoading: estatesLoading,
     isError: estatesError,
   } = useGetEstates();
-
+  console.log("data estate", estatesData);
   const [step, setStep] = useState<Step>(1);
 
   const createApplication = useCreateApplication();
@@ -108,7 +108,7 @@ export default function ApplicationForm({ onSuccess }: ApplicationFormProps) {
 
   const estates =
     estatesData?.map((estate: any) => ({
-      label: estate.estateName,
+      label: estate.name,
       value: estate.id,
     })) ?? [];
 
@@ -739,11 +739,12 @@ export default function ApplicationForm({ onSuccess }: ApplicationFormProps) {
           {/* ================= STEP 2 ================= */}
 
           {step === 2 && (
-            <div className="mt-8 space-y-8">
+            <div className="mt-8 space-y-8 ">
               <Section title="Section E — Property Information">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label="Estate" error={errors.estate?.message}>
                     <Select
+                      className="bg-white text-black [&>option]:bg-white [&>option]:text-black"
                       label=""
                       {...register("estate", {
                         required: "Please select an estate",

@@ -3,19 +3,23 @@
 import { Star } from "lucide-react";
 import type { PlanRate } from "@/types/payment-plan";
 import { PaymentPlanCard } from "./PaymentPlanCard";
+import { useGetMyPropertyPurchase } from "../../../hook/property-payment";
 
 export function PaymentPlansSection({
   price,
+  propertyId,
+  isAtiMember,
   rates,
   estate,
   propertyLocation,
   propertyCity,
   propertyState,
   isAuthenticated,
-  isAtiMember,
   canPurchase,
 }: {
   price: number;
+  propertyId: string;
+  isAtiMember: any;
   rates: PlanRate[];
   estate: {
     id: string;
@@ -28,9 +32,12 @@ export function PaymentPlansSection({
   propertyCity?: string;
   propertyState?: string;
   isAuthenticated: boolean;
-  isAtiMember: boolean;
   canPurchase: boolean;
 }) {
+  const { data: purchaseData, isLoading: purchaseLoading } =
+    useGetMyPropertyPurchase(propertyId);
+
+  const existingPurchaseId = purchaseData?.data?.purchase?.id ?? null;
   return (
     <div>
       {/* ATI PLUS NOTICE */}
@@ -72,6 +79,7 @@ export function PaymentPlansSection({
             isAtiPlusMember={isAtiMember}
             isAuthenticated={isAuthenticated}
             canPurchase={canPurchase}
+            existingPurchaseId={existingPurchaseId}
           />
         ))}
       </div>

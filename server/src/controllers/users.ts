@@ -3,15 +3,16 @@ import { z } from "zod";
 import { db } from "../db/db";
 import {
   properties,
-  propertiesImage,
+  propertyPurchases,
   PropertyPaymentPlan,
   estateNames,
   payments,
+  propertiesImage,
   applicationSchema,
   users,
 } from "../db/schema";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, desc, or } from "drizzle-orm";
 import {
   createLandApplicationSchema,
   verifyPaymentSchema,
@@ -529,6 +530,406 @@ export const getMe = async (c: Context) => {
         success: false,
         message: "Failed to fetch user",
         data: null,
+      },
+      500,
+    );
+  }
+};
+
+export const getUserDashboard = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const purchases = await db
+      .select({
+        id: propertyPurchases.id,
+        propertyId: propertyPurchases.propertyId,
+        paymentPlanId: propertyPurchases.paymentPlanId,
+
+        status: propertyPurchases.status,
+
+        amountPaid: propertyPurchases.amountPaid,
+        balance: propertyPurchases.balance,
+
+        durationMonths: propertyPurchases.durationMonths,
+
+        createdAt: propertyPurchases.createdAt,
+
+        property: {
+          id: properties.id,
+          location: properties.location,
+          city: properties.city,
+          state: properties.state,
+        },
+        propertyImage: {
+          mainImage: propertiesImage.mainImgUrl,
+        },
+
+        estate: {
+          id: estateNames.id,
+          name: estateNames.name,
+        },
+
+        paymentPlan: {
+          id: PropertyPaymentPlan.id,
+          name: PropertyPaymentPlan.name,
+          totalAmount: PropertyPaymentPlan.totalAmount,
+          durationMonths: PropertyPaymentPlan.durationMonths,
+          monthlyAmount: PropertyPaymentPlan.monthlyAmount,
+        },
+      })
+      .from(propertyPurchases)
+      .innerJoin(properties, eq(propertyPurchases.propertyId, properties.id))
+      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
+      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
+      .leftJoin(
+        PropertyPaymentPlan,
+        eq(propertyPurchases.paymentPlanId, PropertyPaymentPlan.id),
+      )
+      .where(eq(propertyPurchases.userId, authUser.id))
+      .orderBy(desc(propertyPurchases.createdAt));
+
+    const validPurchases = purchases.filter(
+      (purchase) =>
+        purchase.status === "ACTIVE" || purchase.status === "COMPLETED",
+    );
+
+    const totalProperties = validPurchases.length;
+
+    const activePurchases = purchases.filter(
+      (purchase) => purchase.status === "ACTIVE",
+    ).length;
+
+    const completedPurchases = purchases.filter(
+      (purchase) => purchase.status === "COMPLETED",
+    ).length;
+
+    const pendingPurchases = purchases.filter(
+      (purchase) => purchase.status === "PENDING",
+    ).length;
+
+    // Total value of all active/completed property purchases
+    const totalPropertyValue = validPurchases.reduce(
+      (total, purchase) =>
+        total + Number(purchase.paymentPlan?.totalAmount ?? 0),
+      0,
+    );
+
+    // Total money actually approved/paid
+    const totalAmountPaid = purchases.reduce(
+      (total, purchase) => total + Number(purchase.amountPaid ?? 0),
+      0,
+    );
+
+    // Total outstanding balance
+    const totalBalance = purchases
+      .filter(
+        (purchase) =>
+          purchase.status === "ACTIVE" || purchase.status === "PENDING",
+      )
+      .reduce((total, purchase) => total + Number(purchase.balance ?? 0), 0);
+
+    return c.json({
+      success: true,
+
+      data: {
+        summary: {
+          totalProperties,
+
+          activePurchases,
+
+          completedPurchases,
+
+          pendingPurchases,
+
+          totalPropertyValue: Number(totalPropertyValue.toFixed(2)),
+
+          totalAmountPaid: Number(totalAmountPaid.toFixed(2)),
+
+          totalBalance: Number(totalBalance.toFixed(2)),
+        },
+
+        purchases,
+      },
+    });
+  } catch (error) {
+    console.error("GET USER DASHBOARD ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to load dashboard",
+      },
+      500,
+    );
+  }
+};
+
+export const getMyProperties = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const purchases = await db
+      .select({
+        id: propertyPurchases.id,
+        propertyId: propertyPurchases.propertyId,
+        paymentPlanId: propertyPurchases.paymentPlanId,
+
+        status: propertyPurchases.status,
+
+        amountPaid: propertyPurchases.amountPaid,
+        balance: propertyPurchases.balance,
+
+        durationMonths: propertyPurchases.durationMonths,
+
+        createdAt: propertyPurchases.createdAt,
+        updatedAt: propertyPurchases.updatedAt,
+
+        property: {
+          id: properties.id,
+          location: properties.location,
+          city: properties.city,
+          state: properties.state,
+          description: properties.description,
+          startingPrice: properties.startingPrice,
+          totalPlots: properties.totalPlots,
+        },
+
+        propertyImage: {
+          mainImage: propertiesImage.mainImgUrl,
+        },
+
+        estate: {
+          id: estateNames.id,
+          name: estateNames.name,
+          accountName: estateNames.accountName,
+          accountNumber: estateNames.accountNumber,
+          bankName: estateNames.bankName,
+        },
+
+        paymentPlan: {
+          id: PropertyPaymentPlan.id,
+          name: PropertyPaymentPlan.name,
+          totalAmount: PropertyPaymentPlan.totalAmount,
+          monthlyAmount: PropertyPaymentPlan.monthlyAmount,
+          durationMonths: PropertyPaymentPlan.durationMonths,
+          interestRate: PropertyPaymentPlan.interestRate,
+        },
+      })
+      .from(propertyPurchases)
+
+      .innerJoin(properties, eq(propertyPurchases.propertyId, properties.id))
+
+      .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
+
+      .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
+
+      .leftJoin(
+        PropertyPaymentPlan,
+        eq(propertyPurchases.paymentPlanId, PropertyPaymentPlan.id),
+      )
+
+      .where(
+        and(
+          eq(propertyPurchases.userId, authUser.id),
+
+          or(
+            eq(propertyPurchases.status, "PENDING"),
+            eq(propertyPurchases.status, "ACTIVE"),
+            eq(propertyPurchases.status, "COMPLETED"),
+          ),
+        ),
+      )
+
+      .orderBy(desc(propertyPurchases.createdAt));
+
+    return c.json({
+      success: true,
+      data: {
+        properties: purchases,
+      },
+    });
+  } catch (error) {
+    console.error("GET MY PROPERTIES ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch your properties",
+      },
+      500,
+    );
+  }
+};
+
+export const getMyPaymentHistory = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const paymentsHistory = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.userId, authUser.id))
+      .orderBy(desc(payments.createdAt));
+
+    return c.json({
+      success: true,
+      data: {
+        payments: paymentsHistory,
+      },
+    });
+  } catch (error) {
+    console.error("GET MY PAYMENT HISTORY ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch payment history",
+      },
+      500,
+    );
+  }
+};
+
+export const getMyApplicationHistory = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const applications = await db
+      .select()
+      .from(applicationSchema)
+      .where(eq(applicationSchema.userId, authUser.id))
+      .orderBy(desc(applicationSchema.createdAt));
+
+    if (applications.length === 0) {
+      return c.json({
+        success: true,
+        data: {
+          applications: [],
+        },
+      });
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        applications,
+      },
+    });
+  } catch (error) {
+    console.error("GET MY APPLICATION HISTORY ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch application history",
+      },
+      500,
+    );
+  }
+};
+
+export const getMyApplicationById = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    const applicationId = c.req.param("applicationId");
+
+    if (!applicationId) {
+      return c.json(
+        {
+          success: false,
+          message: "Application ID is required",
+        },
+        400,
+      );
+    }
+
+    const [application] = await db
+      .select()
+      .from(applicationSchema)
+      .where(
+        and(
+          eq(applicationSchema.id, applicationId),
+          eq(applicationSchema.userId, authUser.id),
+        ),
+      )
+      .limit(1);
+
+    if (!application) {
+      return c.json(
+        {
+          success: false,
+          message: "Application not found",
+        },
+        404,
+      );
+    }
+
+    return c.json({
+      success: true,
+      message: "Application fetched successfully",
+      data: {
+        application,
+      },
+    });
+  } catch (error) {
+    console.error("GET MY APPLICATION BY ID ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch application",
       },
       500,
     );

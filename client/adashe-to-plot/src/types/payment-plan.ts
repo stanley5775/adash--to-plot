@@ -10,8 +10,9 @@ export type PlanRate = {
   createdAt: string;
   updatedAt: string;
 
-  originalTotalAmount?: string;
-  originalMonthlyAmount?: string | null;
-  atiDiscountAmount?: string;
-  atiDiscountPercentage?: number;
+  originalTotalAmount: string;
+  originalMonthlyAmount: string | null;
+
+  discountAmount: string;
+  discountPercentage: number;
 };

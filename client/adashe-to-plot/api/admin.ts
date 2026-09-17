@@ -288,11 +288,68 @@ export const deletePropertyPaymentPlan = async (planId: string) => {
 
   const result = await res.json();
 
-  console.log("DELETE PAYMENT PLAN STATUS:", res.status);
-  console.log("DELETE PAYMENT PLAN RESPONSE:", result);
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to delete payment plan");
+  }
+
+  return result.data;
+};
+
+export const GetAllPayment = async () => {
+  const res = await fetch(`${api}/admin/estate/verifications`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const result = await res.json();
 
   if (!res.ok) {
     throw new Error(result.message || "Failed to delete payment plan");
+  }
+
+  return result.data;
+};
+
+export const ApprovePayment = async (verificationId: string) => {
+  const res = await fetch(
+    `${api}/admin/estate/verifications/${verificationId}/approve`,
+    {
+      method: "PATCH",
+      credentials: "include",
+    },
+  );
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to approve payment");
+  }
+
+  return result.data;
+};
+
+export const RejectPayment = async (
+  verificationId: string,
+  rejectionReason: string,
+) => {
+  const res = await fetch(
+    `${api}/admin/estate/verifications/${verificationId}/reject`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        rejectionReason,
+      }),
+    },
+  );
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(result.message || "Failed to reject payment");
   }
 
   return result.data;
