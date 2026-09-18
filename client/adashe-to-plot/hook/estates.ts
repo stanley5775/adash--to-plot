@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  //   getPropertiesUsers,
-  //   getPropertyFilters,
   getPropertiesUsersById,
   getAllEstates,
   getPropertiesByEstate,
   getAllActiveProperties,
 } from "../api/estate";
-
+const API_URL = process.env.NEXT_PUBLIC_BACKEND;
 export const useGetPropertiesUsersById = (propertyId: string) => {
   return useQuery({
     queryKey: ["property", propertyId],
@@ -61,4 +59,21 @@ export const useGetActivePropertiesUser = (
       states: [],
     },
   };
+};
+
+export const useGetPublicStats = () => {
+  return useQuery({
+    queryKey: ["public-stats"],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/estate/public/stats`);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch public statistics");
+      }
+
+      return data;
+    },
+  });
 };

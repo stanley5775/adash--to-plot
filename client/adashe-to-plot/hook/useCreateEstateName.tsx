@@ -11,6 +11,9 @@ export const useCreateEstateName = () => {
       queryClient.invalidateQueries({
         queryKey: ["estates"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["public-stats"],
+      });
     },
   });
 };

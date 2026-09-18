@@ -97,7 +97,7 @@ export function Navbar() {
 
           {isAdmin && (
             <Link
-              href="/admin/dashboard"
+              href="/admin"
               className="inline-flex items-center gap-2 rounded-full border border-navy-800/15 px-4 py-2.5 text-sm font-semibold text-navy-900 hover:border-navy-800/40">
               <LayoutDashboard className="h-4 w-4" />
               Dashboard

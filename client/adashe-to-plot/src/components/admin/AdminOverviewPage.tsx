@@ -1,63 +1,91 @@
+
+"use client";
+
 import {
   Building2,
   Home,
   Users,
   Star,
   Wallet,
-  TrendingUp,
   CircleDollarSign,
 } from "lucide-react";
 
 import { StatCard } from "@/components/dashboard/StatCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useGetAdminDashboardStats } from "../../../hook/admin";
 
 export default function AdminOverviewPage() {
-  const plotSplit = [
-    {
-      label: "Available",
-      value: 128,
-      total: 250,
-      color: "bg-status-available",
-    },
-    {
-      label: "Reserved",
-      value: 42,
-      total: 250,
-      color: "bg-status-reserved",
-    },
-    {
-      label: "Sold",
-      value: 80,
-      total: 250,
-      color: "bg-status-sold",
-    },
-  ];
+  const { data, isLoading, isError } = useGetAdminDashboardStats();
 
-  const estates = [
-    {
-      id: 1,
-      name: "Adashè Estate",
-      availablePlots: 48,
-      totalPlots: 100,
-    },
-    {
-      id: 2,
-      name: "Thrive Estate",
-      availablePlots: 32,
-      totalPlots: 75,
-    },
-    {
-      id: 3,
-      name: "AMIO Vista Homes",
-      availablePlots: 48,
-      totalPlots: 75,
-    },
-  ];
+  const stats = data?.data;
+
+  console.log("stats", stats);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div>
+          <div className="h-7 w-40 animate-pulse rounded-lg bg-navy-50" />
+
+          <div className="mt-2 h-4 w-72 animate-pulse rounded-lg bg-navy-50" />
+        </div>
+
+        {/* Statistics Skeleton */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 9 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-[116px] animate-pulse rounded-2xl border border-navy-800/5 bg-white p-5"
+            >
+              <div className="flex items-start justify-between">
+                {/* Icon */}
+                <div className="h-9 w-9 rounded-xl bg-navy-50" />
+
+                {/* Small top-right placeholder */}
+                <div className="h-4 w-8 rounded bg-navy-50" />
+              </div>
+
+              {/* Label */}
+              <div className="mt-4 h-3.5 w-24 rounded bg-navy-50" />
+
+              {/* Value */}
+              <div className="mt-2 h-6 w-20 rounded bg-navy-50" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !stats) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-950">
+            Admin Overview
+          </h1>
+
+          <p className="mt-1 text-sm text-ink-500">
+            A snapshot across every estate, customer and sale.
+          </p>
+        </div>
+
+        <EmptyState
+          title="Unable to load dashboard"
+          description="Something went wrong while loading the dashboard statistics."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-navy-950">Admin Overview</h1>
+        <h1 className="text-2xl font-bold text-navy-950">
+          Admin Overview
+        </h1>
 
         <p className="mt-1 text-sm text-ink-500">
           A snapshot across every estate, customer and sale.
@@ -68,124 +96,71 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard
           label="Total Estates"
-          value="12"
+          value={String(stats.totalEstates ?? 0)}
           icon={<Building2 className="h-4 w-4" />}
         />
 
         <StatCard
           label="Total Properties"
-          value="250"
+          value={String(stats.totalProperties ?? 0)}
           icon={<Home className="h-4 w-4" />}
         />
 
         <StatCard
           label="Available Plots"
-          value="128"
+          value={String(stats.availablePlots ?? 0)}
           icon={<Home className="h-4 w-4" />}
         />
 
         <StatCard
           label="Reserved Plots"
-          value="42"
+          value={String(stats.reservedPlots ?? 0)}
           icon={<Home className="h-4 w-4" />}
         />
 
         <StatCard
           label="Sold Plots"
-          value="80"
+          value={String(stats.soldPlots ?? 0)}
           icon={<Home className="h-4 w-4" />}
         />
 
         <StatCard
           label="Total Customers"
-          value="184"
+          value={String(stats.totalCustomers ?? 0)}
           icon={<Users className="h-4 w-4" />}
         />
 
         <StatCard
           label="ATI Plus Members"
-          value="76"
+          value={String(stats.atiPlusMembers ?? 0)}
           icon={<Star className="h-4 w-4" />}
           tone="gold"
         />
 
         <StatCard
           label="Total Sales"
-          value="₦185,400,000"
+          value={formatNaira(Number(stats.totalSales ?? 0))}
           icon={<CircleDollarSign className="h-4 w-4" />}
           tone="gold"
         />
 
         <StatCard
           label="Outstanding Payments"
-          value="₦42,850,000"
+          value={formatNaira(
+            Number(stats.outstandingPayments ?? 0),
+          )}
           icon={<Wallet className="h-4 w-4" />}
         />
-      </div>
-
-      {/* Charts / Progress */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Plot Status */}
-        <div className="rounded-2xl border border-navy-800/10 bg-white p-6">
-          <h3 className="flex items-center gap-2 text-base font-bold text-navy-950">
-            <TrendingUp className="h-4 w-4 text-gold-600" />
-            Plot Status Across Estates
-          </h3>
-
-          <div className="mt-5 space-y-4">
-            {plotSplit.map((plot) => (
-              <div key={plot.label}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-ink-700">{plot.label}</span>
-
-                  <span className="font-semibold text-navy-950">
-                    {plot.value} of {plot.total}
-                  </span>
-                </div>
-
-                <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-navy-100">
-                  <div
-                    className={`h-full rounded-full ${plot.color}`}
-                    style={{
-                      width: `${(plot.value / plot.total) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Plots By Estate */}
-        <div className="rounded-2xl border border-navy-800/10 bg-white p-6">
-          <h3 className="text-base font-bold text-navy-950">Plots by Estate</h3>
-
-          <div className="mt-5 space-y-5">
-            {estates.map((estate) => (
-              <div key={estate.id}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-ink-700">{estate.name}</span>
-
-                  <span className="font-semibold text-navy-950">
-                    {estate.availablePlots} / {estate.totalPlots} available
-                  </span>
-                </div>
-
-                <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-navy-100">
-                  <div
-                    className="h-full rounded-full bg-navy-700"
-                    style={{
-                      width: `${
-                        (estate.availablePlots / estate.totalPlots) * 100
-                      }%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
 }
+
+function formatNaira(amount: number) {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+

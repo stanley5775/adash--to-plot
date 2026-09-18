@@ -4,8 +4,9 @@ import { MapPin, Building2, Wallet } from "lucide-react";
 import type { Property } from "@/types/property";
 import { PropertyCard } from "./PropertyCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { formatNaira } from "@/lib/payment";
+
 import { PropertyGridSkeleton } from "../../../helper/PropertyGridSkeleton";
+import { formatNaira } from "@/lib/payment";
 
 type Estate = {
   id: string;

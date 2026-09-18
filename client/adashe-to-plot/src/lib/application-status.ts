@@ -1,7 +1,6 @@
-import type { ApplicationStatus } from "@/types/application";
 import type { BadgeTone } from "@/components/ui/Badge";
 
-export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+export const APPLICATION_STATUS_LABELS: Record<any, string> = {
   draft: "Draft",
   payment_pending: "Payment Pending",
   paid: "Paid",
@@ -11,12 +10,12 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   rejected: "Rejected",
 };
 
-export function formatApplicationStatus(status: ApplicationStatus): string {
+export function formatApplicationStatus(status: any): string {
   return APPLICATION_STATUS_LABELS[status] ?? status;
 }
 
-export function applicationStatusTone(status: ApplicationStatus): BadgeTone {
-  const map: Record<ApplicationStatus, BadgeTone> = {
+export function applicationStatusTone(status: any): BadgeTone {
+  const map: Record<any, BadgeTone> = {
     draft: "neutral",
     payment_pending: "warning",
     paid: "success",

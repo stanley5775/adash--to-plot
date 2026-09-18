@@ -11,7 +11,6 @@ import {
   ChevronRight,
   CheckCircle2,
 } from "lucide-react";
-
 import { formatNaira } from "@/lib/payment";
 
 type PropertyDocument = {

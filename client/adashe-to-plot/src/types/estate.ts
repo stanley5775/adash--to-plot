@@ -1,14 +1,3 @@
-export type DevelopmentStatus = "Ongoing" | "Completed" | "Selling Fast";
-
-export interface EstateFeature {
-  label: string;
-}
-
-export interface Landmark {
-  name: string;
-  distance: string;
-}
-
 export type Estate = {
   id: string;
   estateId: string;

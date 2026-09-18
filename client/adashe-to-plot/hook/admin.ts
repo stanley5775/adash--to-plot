@@ -19,7 +19,7 @@ import {
   ApprovePayment,
 } from "../api/admin";
 import { useQuery } from "@tanstack/react-query";
-
+const API_URL = process.env.NEXT_PUBLIC_BACKEND;
 export const useCreateEstate = () => {
   const queryClient = useQueryClient();
 
@@ -29,6 +29,9 @@ export const useCreateEstate = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["properties"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["public-stats"],
       });
     },
   });
@@ -50,6 +53,9 @@ export const useDeleteProperty = () => {
       queryClient.invalidateQueries({
         queryKey: ["properties"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["public-stats"],
+      });
     },
   });
 };
@@ -63,6 +69,9 @@ export const useDeleteEstateName = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["estates"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["public-stats"],
       });
     },
   });
@@ -83,6 +92,9 @@ export const useUpdateProperty = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["properties"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["public-stats"],
       });
     },
   });
@@ -251,6 +263,25 @@ export const useRejectPayment = () => {
       queryClient.invalidateQueries({
         queryKey: ["admin-payment-verifications"],
       });
+    },
+  });
+};
+
+export const useGetAdminDashboardStats = () => {
+  return useQuery({
+    queryKey: ["admin-dashboard"],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/admin/estate/dashboard`, {
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch dashboard statistics");
+      }
+
+      return data;
     },
   });
 };

@@ -12,9 +12,7 @@ import {
   X,
 } from "lucide-react";
 
-useCreatePropertyPurchase;
 import type { PlanRate } from "@/types/payment-plan";
-import { formatNaira } from "@/lib/payment";
 import { Badge } from "@/components/ui/Badge";
 import { useRouter } from "next/navigation";
 import {
@@ -22,6 +20,7 @@ import {
   useSubmitPropertyPaymentReceipt,
 } from "../../../hook/property-payment";
 import toast from "react-hot-toast";
+import { formatNaira } from "@/lib/payment";
 
 type EstatePaymentInfo = {
   id: string;

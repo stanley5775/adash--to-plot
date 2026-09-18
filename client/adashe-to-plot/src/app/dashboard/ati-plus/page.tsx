@@ -94,61 +94,6 @@ export default function DashboardAtiPlusPage() {
           </>
         )}
       </div>
-
-      {/* Payment History */}
-      <div>
-        <h3 className="text-base font-bold text-navy-950">
-          ATI Plus Payment History
-        </h3>
-
-        <div className="mt-4 overflow-hidden rounded-2xl border border-navy-800/10 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-navy-800/10 bg-navy-50">
-                  <th className="px-5 py-3 font-semibold text-ink-700">Date</th>
-
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Description
-                  </th>
-
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Amount
-                  </th>
-
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Status
-                  </th>
-
-                  <th className="px-5 py-3 font-semibold text-ink-700">
-                    Reference
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr>
-                  <td className="px-5 py-4 text-ink-700">Sep 01, 2026</td>
-
-                  <td className="px-5 py-4 text-ink-700">
-                    ATI Plus Subscription
-                  </td>
-
-                  <td className="px-5 py-4 font-semibold text-navy-950">
-                    ₦20,000
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <Badge tone={statusToTone("Paid")}>Paid</Badge>
-                  </td>
-
-                  <td className="px-5 py-4 text-ink-500">ATI-PAY-001</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

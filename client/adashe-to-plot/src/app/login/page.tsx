@@ -1,5 +1,7 @@
 import { LoginForm } from "@/components/login/LoginForm";
 import type { Metadata } from "next";
+import { Suspense } from "react";
+
 export const metadata: Metadata = {
   title: "Login Account | Adashè to Plot",
   description:
@@ -8,7 +10,9 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <>
-      <LoginForm />
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
     </>
   );
 }

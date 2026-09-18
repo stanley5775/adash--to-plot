@@ -2,12 +2,13 @@
 
 import { DataTable, type Column } from "@/components/admin/DataTable";
 import { Badge } from "@/components/ui/Badge";
-import {
-  applicationStatusTone,
-  formatApplicationStatus,
-} from "@/lib/application-status";
+
 import { formatNaira, formatDate } from "@/lib/payment";
 import { useGetAllApplicants } from "../../../../../hook/admin";
+import {
+  formatApplicationStatus,
+  applicationStatusTone,
+} from "@/lib/application-status";
 
 const columns: Column<any>[] = [
   {

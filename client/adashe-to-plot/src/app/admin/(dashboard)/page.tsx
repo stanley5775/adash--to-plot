@@ -10,7 +10,7 @@ export default function DashboardOverviewPage() {
     return null;
   }
 
-  if (user.role !== "ADMIN" && user.role !== "SUB_ADMIN") {
+  if (user.role !== "ADMIN") {
     return null;
   }
 

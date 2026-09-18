@@ -9,7 +9,7 @@ import { EstateGallery } from "@/components/estate/EstateGallery";
 import { EstateStats } from "@/components/estate/EstateStats";
 import { PropertyGrid } from "@/components/property/PropertyGrid";
 import { PaymentPlansSection } from "@/components/property/PaymentPlansSection";
-import { BookInspectionButton } from "@/components/booking/BookInspectionButton";
+
 import { WhatsAppButton } from "@/components/booking/WhatsAppButton";
 import { Badge } from "@/components/ui/Badge";
 

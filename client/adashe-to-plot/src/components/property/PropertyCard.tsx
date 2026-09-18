@@ -3,8 +3,9 @@ import Link from "next/link";
 import { MapPin, Ruler } from "lucide-react";
 
 import type { Property } from "@/types/property";
-import { formatNaira } from "@/lib/payment";
+
 import { PropertyStatus } from "./PropertyStatus";
+import { formatNaira } from "@/lib/payment";
 
 export function PropertyCard({
   property,
