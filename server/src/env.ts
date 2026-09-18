@@ -14,8 +14,6 @@ export const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string(),
   RESEND_API_KEY: z.string(),
   PAYSTACK_SECRET_KEY: z.string(),
-  SELAR_API_KEY: z.string().optional(),
-  SELAR_WEBHOOK_SECRET: z.string().optional(),
 
   WHATSAPP_NUMBER: z.string().regex(/^\d+$/),
 });
