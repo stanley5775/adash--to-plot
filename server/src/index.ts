@@ -13,7 +13,7 @@ const app = new Hono();
 const allowedOrigins = [
   "http://localhost:3001",
   "https://adashe-to-plot.vercel.app",
-  "https://adashe-to-plot.vercel.app",
+  "https://adashetoplot.org",
 ];
 app.use(logger());
 app.use(
