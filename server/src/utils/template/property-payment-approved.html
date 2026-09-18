@@ -1,0 +1,222 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Approved</title>
+  </head>
+
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #f4f6f8;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2937;
+    ">
+    <table
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="padding: 40px 15px; background: #f4f6f8">
+      <tr>
+        <td align="center">
+          <table
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              max-width: 600px;
+              width: 100%;
+              background: #ffffff;
+              border-radius: 12px;
+              overflow: hidden;
+            ">
+            <!-- Header -->
+            <tr>
+              <td style="background: #111827; padding: 28px 35px">
+                <h1 style="margin: 0; color: #ffffff; font-size: 24px">
+                  Adashè to Plot
+                </h1>
+
+                ```
+                <p style="margin: 8px 0 0; color: #d1d5db; font-size: 14px">
+                  Payment Verification
+                </p>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td style="padding: 35px">
+                <!-- Success -->
+                <div style="text-align: center; margin-bottom: 25px">
+                  <div
+                    style="
+                      width: 58px;
+                      height: 58px;
+                      line-height: 58px;
+                      margin: 0 auto;
+                      border-radius: 50%;
+                      background: #dcfce7;
+                      color: #15803d;
+                      font-size: 30px;
+                      font-weight: bold;
+                    ">
+                    ✓
+                  </div>
+
+                  <h2
+                    style="margin: 12px 0 8px; color: #166534; font-size: 22px">
+                    Payment Approved
+                  </h2>
+
+                  <p style="margin: 0; color: #6b7280; font-size: 14px">
+                    Your submitted payment has been successfully verified.
+                  </p>
+                </div>
+
+                <p style="font-size: 15px">
+                  Hello <strong>{{customer_name}}</strong>,
+                </p>
+
+                <p style="font-size: 14px; line-height: 1.7; color: #4b5563">
+                  Your payment receipt has been reviewed and approved by our
+                  team. The payment has been added to your property purchase
+                  successfully.
+                </p>
+
+                <!-- Payment Details -->
+                <table
+                  width="100%"
+                  cellpadding="9"
+                  cellspacing="0"
+                  style="font-size: 14px; margin-top: 20px">
+                  <tr>
+                    <td style="color: #6b7280">Estate</td>
+
+                    <td align="right">
+                      <strong>{{estate_name}}</strong>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="color: #6b7280">Property Location</td>
+
+                    <td align="right">
+                      <strong>{{property_location}}</strong>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="color: #6b7280">Payment Approved</td>
+
+                    <td align="right">
+                      <strong>₦{{amount}}</strong>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="color: #6b7280">Total Amount Paid</td>
+
+                    <td align="right">
+                      <strong>₦{{amount_paid}}</strong>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="color: #6b7280">Remaining Balance</td>
+
+                    <td align="right">
+                      <strong>₦{{balance}}</strong>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style="color: #6b7280">Verification ID</td>
+
+                    <td align="right">{{verification_id}}</td>
+                  </tr>
+                </table>
+
+                <!-- Balance Status -->
+                <div
+                  style="
+                    margin-top: 25px;
+                    padding: 18px;
+                    background: #f0fdf4;
+                    border-left: 4px solid #16a34a;
+                    border-radius: 6px;
+                  ">
+                  <p
+                    style="
+                      margin: 0 0 7px;
+                      font-size: 13px;
+                      color: #166534;
+                      font-weight: bold;
+                    ">
+                    Payment successfully recorded
+                  </p>
+
+                  <p
+                    style="
+                      margin: 0;
+                      font-size: 14px;
+                      color: #166534;
+                      line-height: 1.6;
+                    ">
+                    Your approved payment has been added to your account. Please
+                    keep this email for your records.
+                  </p>
+                </div>
+
+                <p
+                  style="
+                    margin-top: 25px;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #4b5563;
+                  ">
+                  If this is an installment payment, your remaining balance will
+                  be updated in your dashboard. You can continue to monitor your
+                  property purchase and payment history from your account.
+                </p>
+
+                <!-- Final message -->
+                <div
+                  style="
+                    margin-top: 25px;
+                    padding: 16px;
+                    background: #f9fafb;
+                    border-radius: 6px;
+                    text-align: center;
+                  ">
+                  <p style="margin: 0; font-size: 14px; color: #4b5563">
+                    Thank you for choosing
+                    <strong>Adashè to Plot</strong>.
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td
+                style="
+                  padding: 25px 35px;
+                  background: #f9fafb;
+                  text-align: center;
+                ">
+                <p style="margin: 0; color: #9ca3af; font-size: 12px">
+                  © {{year}} Adashè to Plot. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    ```
+  </body>
+</html>

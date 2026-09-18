@@ -1,28 +1,25 @@
-export type PropertyStatus = "Available" | "Reserved" | "Sold";
-
-export interface PropertyDocumentation {
-  surveyPlan: boolean;
-  deedOfAssignment: boolean;
-  allocation: boolean;
-  contractOfSale: boolean;
+export enum PropertyStatus {
+  ACTIVE = "ACTIVE",
+  NON_ACTIVE = "NON_ACTIVE",
+  SOLD_OUT = "SOLD_OUT",
 }
 
 export interface Property {
   id: string;
-  slug: string;
   estateId: string;
-  plotNumber: string;
-  title: string;
-  propertyType: string;
+  estateName: string;
+  plotSize: string;
+  state: string;
+  city: string;
   location: string;
-  sizeSqm: number;
-  price: number;
+
+  description: string | null;
+
+  startingPrice: string | number;
+
+  totalPlots: number;
+
   status: PropertyStatus;
-  developmentStatus: string;
-  images: string[];
-  description: string;
-  investmentHighlights: string[];
-  features: string[];
-  documentation: PropertyDocumentation;
-  paymentPlanMonths: number[];
+
+  mainImage: string | null;
 }

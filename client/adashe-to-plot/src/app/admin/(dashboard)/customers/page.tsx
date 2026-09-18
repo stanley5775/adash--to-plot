@@ -1,56 +1,16 @@
 "use client";
 
 import { DataTable, type Column } from "@/components/admin/DataTable";
-import type { Customer } from "@/types/customer";
+import { useGetAllUsers, useToggleUserStatus } from "../../../../../hook/admin";
 
 interface CustomerRow {
   id: string;
   name: string;
   phone: string;
   email: string;
-
   dateJoined: string;
   status: "Active" | "Deactivated";
 }
-
-const rows: CustomerRow[] = [
-  {
-    id: "customer-1",
-    name: "John Doe",
-    phone: "+234 801 234 5678",
-    email: "john@example.com",
-
-    dateJoined: "Sep 1, 2026",
-    status: "Active",
-  },
-  {
-    id: "customer-2",
-    name: "Jane Smith",
-    phone: "+234 802 345 6789",
-    email: "jane@example.com",
-
-    dateJoined: "Aug 28, 2026",
-    status: "Active",
-  },
-  {
-    id: "customer-3",
-    name: "Michael Okafor",
-    phone: "+234 803 456 7890",
-    email: "michael@example.com",
-
-    dateJoined: "Aug 25, 2026",
-    status: "Active",
-  },
-  {
-    id: "customer-4",
-    name: "Sarah Williams",
-    phone: "+234 804 567 8901",
-    email: "sarah@example.com",
-
-    dateJoined: "Aug 20, 2026",
-    status: "Deactivated",
-  },
-];
 
 const columns: Column<CustomerRow>[] = [
   {
@@ -61,13 +21,12 @@ const columns: Column<CustomerRow>[] = [
   },
   {
     header: "Phone",
-    render: (customer) => customer.phone,
+    render: (customer) => customer.phone || "—",
   },
   {
     header: "Email",
     render: (customer) => customer.email,
   },
-
   {
     header: "Status",
     render: (customer) => (
@@ -88,6 +47,41 @@ const columns: Column<CustomerRow>[] = [
 ];
 
 export default function AdminCustomersPage() {
+  const { data: users = [], isLoading, isError, error } = useGetAllUsers();
+
+  const toggleUserStatusMutation = useToggleUserStatus();
+
+  const rows: CustomerRow[] = users.map((user: any) => ({
+    id: user.id,
+    name: user.fullName,
+    phone: user.phoneNumber,
+    email: user.email,
+    dateJoined: new Date(user.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    status: user.isActive ? "Active" : "Deactivated",
+  }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-ink-500">Loading customers...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+        <p className="text-sm text-red-600">
+          {error instanceof Error ? error.message : "Failed to load customers"}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -104,9 +98,14 @@ export default function AdminCustomersPage() {
         actions={(customer) => (
           <button
             type="button"
-            disabled={customer.status === "Deactivated"}
-            className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40">
-            Deactivate
+            disabled={toggleUserStatusMutation.isPending}
+            onClick={() => toggleUserStatusMutation.mutate(customer.id)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+              customer.status === "Active"
+                ? "border-red-200 text-red-600 hover:bg-red-50"
+                : "border-green-200 text-green-600 hover:bg-green-50"
+            } disabled:cursor-not-allowed disabled:opacity-50`}>
+            {customer.status === "Active" ? "Deactivate" : "Activate"}
           </button>
         )}
       />

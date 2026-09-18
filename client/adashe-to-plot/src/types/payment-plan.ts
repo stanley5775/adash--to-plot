@@ -1,33 +1,18 @@
-export type PlanDuration = 0 | 6 | 12 | 18 | 24;
-
-export interface PlanRate {
-  duration: PlanDuration;
-  interestRate: number;
-  label: string;
-}
-
-export interface EstatePaymentPlan {
+export type PlanRate = {
+  id: string;
+  propertyId: string;
   estateId: string;
-  rates: PlanRate[];
-}
+  name: string;
+  durationMonths: number | null;
+  totalAmount: string;
+  monthlyAmount: string | null;
+  interestRate: string;
+  createdAt: string;
+  updatedAt: string;
 
-export interface ComputedInstallment {
-  number: number;
-  dueDate: string;
-  amount: number;
-  status: "Paid" | "Due" | "Upcoming";
-  isFirstPayment: boolean;
-}
+  originalTotalAmount: string;
+  originalMonthlyAmount: string | null;
 
-export interface ComputedPaymentPlan {
-  duration: PlanDuration;
-  interestRate: number;
-  principal: number;
-  totalBeforeDiscount: number;
-  atiPlusDiscount: number;
-  isAtiPlusMember: boolean;
-  monthlyAmount: number;
-  firstPaymentAmount: number;
-  totalPayable: number;
-  installments: number;
-}
+  discountAmount: string;
+  discountPercentage: number;
+};

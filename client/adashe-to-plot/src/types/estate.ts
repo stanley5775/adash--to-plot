@@ -1,26 +1,13 @@
-export type DevelopmentStatus = "Ongoing" | "Completed" | "Selling Fast";
-
-export interface EstateFeature {
-  label: string;
-}
-
-export interface Estate {
+export type Estate = {
   id: string;
-  slug: string;
-  name: string;
-  location: string;
+  estateId: string;
+  estateName: string;
   state: string;
-  summary: string;
+  city: string;
+  location: string;
   description: string;
-  startingPrice: number;
+  startingPrice: string;
   totalPlots: number;
-  availablePlots: number;
-  reservedPlots: number;
-  soldPlots: number;
-  developmentStatus: DevelopmentStatus;
-  coverImage: string;
-  gallery: string[];
-  features: string[];
-  propertyIds: string[];
-  paymentPlanMonths: number[];
-}
+  mainImage: string | null;
+  status: "ACTIVE" | "INACTIVE";
+};

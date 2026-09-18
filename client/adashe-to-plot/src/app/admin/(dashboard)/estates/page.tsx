@@ -1,105 +1,29 @@
 "use client";
 
+import { Plus, X } from "lucide-react";
 import { useState } from "react";
-import Link from "next/link";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
 
-import { DataTable, type Column } from "@/components/admin/DataTable";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { EstateForm } from "@/components/admin/EstateForm";
+import { useGetEstates } from "../../../../../hook/useGetEstates";
 
-type Estate = {
-  id: string;
-  name: string;
-  location: string;
-  totalPlots: number;
-  availablePlots: number;
-  soldPlots: number;
-  startingPrice: number;
-  developmentStatus: "Selling Fast" | "Available";
-};
-
-// Dummy data for UI
-const estates: Estate[] = [
-  {
-    id: "1",
-    name: "Adashè Estate",
-    location: "Awka, Anambra",
-    totalPlots: 100,
-    availablePlots: 48,
-    soldPlots: 52,
-    startingPrice: 2500000,
-    developmentStatus: "Selling Fast",
-  },
-  {
-    id: "2",
-    name: "Thrive Estate",
-    location: "Awka, Anambra",
-    totalPlots: 75,
-    availablePlots: 32,
-    soldPlots: 43,
-    startingPrice: 3500000,
-    developmentStatus: "Available",
-  },
-  {
-    id: "3",
-    name: "AMIO Vista Homes",
-    location: "Nnewi, Anambra",
-    totalPlots: 75,
-    availablePlots: 48,
-    soldPlots: 27,
-    startingPrice: 4500000,
-    developmentStatus: "Available",
-  },
-];
-
-const formatNaira = (amount: number) => `₦${amount.toLocaleString("en-NG")}`;
-
-const columns: Column<Estate>[] = [
-  {
-    header: "Estate",
-    render: (estate) => (
-      <span className="font-semibold text-navy-950">{estate.name}</span>
-    ),
-  },
-  {
-    header: "Location",
-    render: (estate) => estate.location,
-  },
-  {
-    header: "Total Plots",
-    render: (estate) => estate.totalPlots,
-  },
-  {
-    header: "Available",
-    render: (estate) => estate.availablePlots,
-  },
-  {
-    header: "Sold",
-    render: (estate) => estate.soldPlots,
-  },
-  {
-    header: "Starting Price",
-    render: (estate) => formatNaira(estate.startingPrice),
-  },
-  {
-    header: "Status",
-    render: (estate) => (
-      <Badge
-        tone={estate.developmentStatus === "Selling Fast" ? "gold" : "info"}>
-        {estate.developmentStatus}
-      </Badge>
-    ),
-  },
-];
+import { EstateTable, type Estate } from "@/components/estate/EstateTable";
+import { EditEstateModal } from "@/components/estate/EditEstateModal";
+import { DeleteEstateModal } from "@/components/estate/DeleteEstateModal";
 
 export default function AdminEstatesPage() {
   const [estateToDelete, setEstateToDelete] = useState<Estate | null>(null);
 
+  const [estateToEdit, setEstateToEdit] = useState<Estate | null>(null);
+
+  const [showEstateForm, setShowEstateForm] = useState(false);
+
+  const { data: estates = [], isLoading, isError, error } = useGetEstates();
+
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
+        {/* HEADER */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-navy-950">Estates</h1>
@@ -109,91 +33,77 @@ export default function AdminEstatesPage() {
             </p>
           </div>
 
-          <Button href="/admin/estates/new">
+          <Button type="button" onClick={() => setShowEstateForm(true)}>
             <Plus className="h-4 w-4" />
             Add Estate
           </Button>
         </div>
 
-        {/* Table */}
-        <DataTable
-          columns={columns}
-          rows={estates}
-          actions={(estate) => (
-            <div className="flex items-center gap-2">
-              {/* EDIT */}
-              <Link
-                href={`/admin/estates/${estate.id}/edit`}
-                className="rounded-lg p-2 text-ink-500 transition hover:bg-navy-100 hover:text-navy-900"
-                aria-label={`Edit ${estate.name}`}>
-                <Pencil className="h-4 w-4" />
-              </Link>
+        {/* LOADING */}
+        {isLoading && (
+          <div className="rounded-2xl border border-navy-800/10 bg-white p-8 text-center text-sm text-ink-500">
+            Loading estates...
+          </div>
+        )}
 
-              {/* DELETE */}
-              <button
-                type="button"
-                onClick={() => setEstateToDelete(estate)}
-                className="rounded-lg p-2 text-ink-500 transition hover:bg-navy-100 hover:text-status-sold"
-                aria-label={`Delete ${estate.name}`}>
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        />
+        {/* ERROR */}
+        {isError && (
+          <div className="rounded-2xl border border-status-sold/20 bg-white p-8 text-center">
+            <p className="text-sm text-status-sold">
+              {error instanceof Error
+                ? error.message
+                : "Failed to load estates"}
+            </p>
+          </div>
+        )}
+
+        {/* EMPTY */}
+        {!isLoading && !isError && estates.length === 0 && (
+          <div className="rounded-2xl border border-navy-800/10 bg-white p-8 text-center">
+            <p className="text-sm text-ink-500">
+              No estates have been created yet.
+            </p>
+          </div>
+        )}
+
+        {/* TABLE */}
+        {!isLoading && !isError && estates.length > 0 && (
+          <EstateTable
+            estates={estates}
+            onEdit={setEstateToEdit}
+            onDelete={setEstateToDelete}
+          />
+        )}
       </div>
 
-      {/* DELETE CONFIRMATION */}
-      {estateToDelete && (
+      {/* EDIT */}
+      <EditEstateModal
+        estate={estateToEdit}
+        onClose={() => setEstateToEdit(null)}
+      />
+
+      {/* DELETE */}
+      <DeleteEstateModal
+        estate={estateToDelete}
+        onClose={() => setEstateToDelete(null)}
+      />
+
+      {/* CREATE ESTATE */}
+      {showEstateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-navy-950">
-                  Delete Estate
-                </h2>
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+            <button
+              type="button"
+              onClick={() => setShowEstateForm(false)}
+              className="absolute right-4 top-4 z-10 rounded-lg p-2 text-ink-500 transition hover:bg-navy-100 hover:text-navy-950"
+              aria-label="Close">
+              <X className="h-5 w-5" />
+            </button>
 
-                <p className="mt-2 text-sm text-ink-500">
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-navy-950">
-                    {estateToDelete.name}
-                  </span>
-                  ?
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setEstateToDelete(null)}
-                className="rounded-lg p-2 text-ink-500 hover:bg-navy-100"
-                aria-label="Close">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <p className="mt-4 text-sm text-status-sold">
-              This action cannot be undone.
-            </p>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEstateToDelete(null)}>
-                Cancel
-              </Button>
-
-              <Button
-                type="button"
-                onClick={() => {
-                  // API later:
-                  // await deleteEstate(estateToDelete.id)
-
-                  setEstateToDelete(null);
-                }}
-                className="bg-status-sold hover:bg-status-sold/90">
-                Delete Estate
-              </Button>
-            </div>
+            <EstateForm
+              onSuccess={() => setShowEstateForm(false)}
+              onCancel={() => setShowEstateForm(false)}
+            />
           </div>
         </div>
       )}

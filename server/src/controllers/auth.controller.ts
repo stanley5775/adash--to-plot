@@ -18,6 +18,7 @@ import {
 import { generateTokens } from "../utils/jwt";
 import { sessions } from "../db/schema";
 import { db } from "../db/db";
+import { clearAuthCookies, setAuthCookies } from "../utils/cookies";
 
 // REGISTER
 export const register = async (c: Context) => {
@@ -106,6 +107,7 @@ export const login = async (c: Context) => {
       user.id,
       user.email,
       user.full_name,
+      user.role,
     );
 
     // Store refresh session
@@ -116,7 +118,7 @@ export const login = async (c: Context) => {
     });
 
     // Store tokens in HTTP-only cookies
-    setCookie(c, accessToken, refreshToken);
+    setAuthCookies(c, accessToken, refreshToken);
 
     return c.json(
       {
@@ -173,9 +175,7 @@ export const login = async (c: Context) => {
 
 // LOGOUT
 export const logout = async (c: Context) => {
-  deleteCookie(c, "accessToken", {
-    path: "/",
-  });
+  clearAuthCookies(c);
 
   return c.json({
     success: true,

@@ -11,10 +11,11 @@ export function EstateGrid({ estates }: { estates: Estate[] }) {
       />
     );
   }
+
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {estates.map((estate) => (
-        <EstateCard key={estate.id} estate={estate} />
+        <EstateCard key={estate.estateId} estate={estate} />
       ))}
     </div>
   );
