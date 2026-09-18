@@ -10,12 +10,54 @@ import {
   RotateCcw,
   MapPin,
   ArrowRight,
+  FileCheck2,
+  Headset,
+  MapPinned,
+  ShieldCheck,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
 
 import { Select } from "@/components/ui/Select";
 import { useGetActivePropertiesUser } from "../../../hook/estates";
 import { EstateSkeleton } from "../../../helper/EstateSkeleton";
 import { Button } from "../ui/Button";
+import { WhatsAppButton } from "../booking/WhatsAppButton";
+
+
+const whyUs = [
+  {
+    icon: ShieldCheck,
+    title: "Verified Locations",
+    copy: "Every estate is inspected and title-verified before it ever reaches our platform.",
+  },
+  {
+    icon: Wallet,
+    title: "Flexible Payment Plans",
+    copy: "Spread your investment from 6 to 24 months, or pay outright — your choice.",
+  },
+  {
+    icon: FileCheck2,
+    title: "Secure Documentation",
+    copy: "Survey plans, deeds and allocation letters are tracked from day one.",
+  },
+  {
+    icon: MapPinned,
+    title: "Strategic Locations",
+    copy: "We select estates along Abuja's fastest-growing residential corridors.",
+  },
+  {
+    icon: Headset,
+    title: "Professional Support",
+    copy: "A dedicated advisor guides you from inspection to allocation.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Investment Opportunities",
+    copy: "Options built for owner-occupiers and yield-focused investors alike.",
+  },
+];
+
 
 const priceBands = [
   { label: "Price", value: "" },
@@ -160,7 +202,8 @@ export function PropertyContent() {
                 <button
                   type="button"
                   onClick={handleSearch}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-navy-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-navy-800">
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-navy-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-navy-800"
+                >
                   <Search className="h-4 w-4" />
                   Search
                 </button>
@@ -169,7 +212,8 @@ export function PropertyContent() {
                   type="button"
                   onClick={handleReset}
                   title="Reset filters"
-                  className="flex items-center justify-center rounded-xl border border-navy-800/15 px-4 py-3 text-navy-950 transition hover:bg-navy-50">
+                  className="flex items-center justify-center rounded-xl border border-navy-800/15 px-4 py-3 text-navy-950 transition hover:bg-navy-50"
+                >
                   <RotateCcw className="h-4 w-4" />
                 </button>
               </div>
@@ -203,7 +247,8 @@ export function PropertyContent() {
               </div>
               <Link
                 href="/estates"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-800 hover:text-gold-600">
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-800 hover:text-gold-600"
+              >
                 View all estates <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -214,7 +259,8 @@ export function PropertyContent() {
                   <Link
                     key={property.id}
                     href={`/properties/${property.id}`}
-                    className="group overflow-hidden rounded-2xl border border-navy-800/10 bg-white transition hover:-translate-y-1 hover:shadow-lg">
+                    className="group overflow-hidden rounded-2xl border border-navy-800/10 bg-white transition hover:-translate-y-1 hover:shadow-lg"
+                  >
                     {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-navy-50">
                       {property.mainImage ? (
@@ -283,7 +329,8 @@ export function PropertyContent() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-navy-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-navy-800">
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-navy-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-navy-800"
+                >
                   <RotateCcw className="h-4 w-4" />
                   Reset filters
                 </button>
@@ -292,6 +339,81 @@ export function PropertyContent() {
           </>
         )}
       </div>
+
+      {/* Why Adashe-to-Plot */}
+      <section className="bg-navy-900 py-20 sm:py-24">
+        <div className="container-page">
+          <div className="max-w-xl">
+            <span className="gold-rule mb-4 block" />
+            <h2 className="text-3xl font-bold tracking-tight text-white">
+              Why Adashè-to-Plot
+            </h2>
+            <p className="mt-2 text-navy-100/70">
+              The fundamentals we don&apos;t compromise on, on every estate we
+              bring to the platform.
+            </p>
+          </div>
+          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {whyUs.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+              >
+                <item.icon className="h-7 w-7 text-gold-400" />
+                <h3 className="mt-4 text-base font-bold text-white">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-navy-100/70">{item.copy}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+          <section className="relative overflow-hidden bg-navy-950 py-20 sm:py-24">
+              <div className="absolute inset-0">
+                <Image
+                  src="/images/thrive-6unit-flats.jpg"
+                  alt="Adashè-to-Plot development"
+                  fill
+                  className="object-cover opacity-20"
+                />
+              </div>
+      
+              <div className="container-page relative text-center">
+                <h2 className="mx-auto max-w-xl text-2xl font-bold text-white sm:text-3xl">
+                  Why customers trust Adashè-to-Plot
+                </h2>
+      
+                <p className="mx-auto mt-4 max-w-lg text-navy-100/70">
+                  Verified documentation, transparent pricing, and a support team that
+                  stays with you from your first inspection to your final allocation.
+                </p>
+              </div>
+            </section>
+
+      {/* Inspection CTA */}
+      <section className="bg-navy-900 py-20 sm:py-24">
+        <div className="container-page flex flex-col items-center gap-6 text-center">
+          <span className="gold-rule" />
+          <h2 className="max-w-xl text-3xl font-bold text-white">
+            See it before you commit.
+          </h2>
+          <p className="max-w-lg text-navy-100/70">
+            Book a guided inspection of any estate or property, or chat directly
+            with an investment advisor on WhatsApp — right now.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button href="/contact" size="lg">
+              Book an Inspection
+            </Button>
+            <WhatsAppButton
+              message="Hello Adashè-to-Plot, I'd like to book a property inspection."
+              size="lg"
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

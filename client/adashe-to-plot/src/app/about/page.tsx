@@ -44,10 +44,17 @@ export default function AboutPage() {
           </h1>
 
           <p className="mt-4 text-ink-500">
-            Adashè-to-Plot exists to make verified property ownership reachable
-            — one manageable payment at a time. We source, verify and manage
-            residential estates across Abuja, then give investors of every size
-            a clear path from inspection to allocation.
+            Adashè-to-Plot makes verified property ownership more accessible,
+            transparent, and achievable. We connect buyers with carefully
+            sourced residential estates across Abuja, offering clearly defined
+            plots, transparent pricing, flexible payment plans, and a structured
+            journey from property discovery and inspection to application,
+            payment, documentation, and allocation. Whether you're purchasing
+            your first plot, securing land for your family, or growing your
+            real-estate portfolio, Adashè-to-Plot gives you a clearer path to
+            ownership—supported by verified opportunities and payment options
+            designed to make property acquisition more manageable. **Find your
+            plot. Plan your payments. Move closer to ownership.**
           </p>
         </div>
 
@@ -57,7 +64,8 @@ export default function AboutPage() {
             Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="rounded-2xl border border-navy-800/10 bg-white p-6 text-center">
+                className="rounded-2xl border border-navy-800/10 bg-white p-6 text-center"
+              >
                 <div className="mx-auto h-8 w-16 animate-pulse rounded-lg bg-navy-50" />
 
                 <div className="mx-auto mt-2 h-3 w-24 animate-pulse rounded bg-navy-50" />
@@ -67,7 +75,8 @@ export default function AboutPage() {
             Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="rounded-2xl border border-navy-800/10 bg-white p-6 text-center">
+                className="rounded-2xl border border-navy-800/10 bg-white p-6 text-center"
+              >
                 <p className="text-2xl font-bold text-navy-950">—</p>
 
                 <p className="mt-1 text-xs uppercase tracking-wide text-ink-300">
@@ -169,7 +178,8 @@ export default function AboutPage() {
           {values.map((v) => (
             <div
               key={v.title}
-              className="rounded-2xl border border-navy-800/10 bg-white p-6">
+              className="rounded-2xl border border-navy-800/10 bg-white p-6"
+            >
               <v.icon className="h-7 w-7 text-gold-600" />
 
               <h3 className="mt-4 text-base font-bold text-navy-950">
