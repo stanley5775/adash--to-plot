@@ -23,5 +23,10 @@
     "@types/pg": "^8.23.1",
     "drizzle-kit": "1.0.0-rc.4",
     "tsx": "^4.23.13"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "bun"
+    }
   }
 }
