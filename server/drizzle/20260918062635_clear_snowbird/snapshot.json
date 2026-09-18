@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "92d7f017-2715-4991-a852-318b3b0cf928",
+  "id": "3042d985-2dfc-4605-a8f7-01f22e9aff16",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -119,15 +119,6 @@
     },
     {
       "values": [
-        "ACTIVE",
-        "INACTIVE"
-      ],
-      "name": "payment_plan_status",
-      "entityType": "enums",
-      "schema": "public"
-    },
-    {
-      "values": [
         "PAYSTACK"
       ],
       "name": "payment_provider",
@@ -156,9 +147,20 @@
     },
     {
       "values": [
-        "AVAILABLE",
-        "RESERVED",
-        "SOLD"
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "CANCELLED"
+      ],
+      "name": "property_payment_verification_status",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "ACTIVE",
+        "NON_ACTIVE",
+        "SOLD_OUT"
       ],
       "name": "property_status",
       "entityType": "enums",
@@ -230,18 +232,6 @@
     },
     {
       "isRlsEnabled": false,
-      "name": "payment_plan_installments",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "payment_plans",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
       "name": "payments",
       "entityType": "tables",
       "schema": "public"
@@ -261,6 +251,12 @@
     {
       "isRlsEnabled": false,
       "name": "property_installments",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "property_payment_verifications",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1156,12 +1152,142 @@
     {
       "type": "text",
       "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "varchar",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "slug",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "main_image_url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "varchar(100)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "varchar(100)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "state",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "numeric(15,2)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "starting_price",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "main_image_public_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
       "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "account_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "account_number",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "estate_names"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "bank_name",
       "entityType": "columns",
       "schema": "public",
       "table": "estate_names"
@@ -1372,240 +1498,6 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "payment_plan_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "installment_number",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "due_date",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "description",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "property_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "name",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "duration_months",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "numeric(5,2)",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'0'",
-      "generated": null,
-      "identity": null,
-      "name": "interest_percentage",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "payment_amount",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "total_payable",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "payment_plan_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": "'ACTIVE'",
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "gen_random_uuid()",
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
       "table": "payments"
     },
     {
@@ -1804,6 +1696,19 @@
       "table": "properties"
     },
     {
+      "type": "property_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'ACTIVE'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties"
+    },
+    {
       "type": "text",
       "typeSchema": null,
       "notNull": true,
@@ -1812,6 +1717,19 @@
       "generated": null,
       "identity": null,
       "name": "location",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "properties"
+    },
+    {
+      "type": "varchar",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "slug",
       "entityType": "columns",
       "schema": "public",
       "table": "properties"
@@ -2155,7 +2073,7 @@
       "table": "property_installments"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -2256,6 +2174,162 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "purchase_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "numeric(15,2)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "receipt_url",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "receipt_public_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "property_payment_verification_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'PENDING'",
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "rejection_reason",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reviewed_by",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reviewed_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "property_purchases"
     },
     {
@@ -2298,7 +2372,7 @@
       "table": "property_purchases"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -2311,7 +2385,7 @@
       "table": "property_purchases"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -2324,11 +2398,11 @@
       "table": "property_purchases"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
-      "default": "0",
+      "default": "'0'",
       "generated": null,
       "identity": null,
       "name": "amount_paid",
@@ -2337,7 +2411,7 @@
       "table": "property_purchases"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -2363,7 +2437,7 @@
       "table": "property_purchases"
     },
     {
-      "type": "integer",
+      "type": "numeric(15,2)",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
@@ -2668,6 +2742,27 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "property_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"duration_months\" IS NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "property_payment_plan_one_outright_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "property_payment_plan"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "email",
           "isExpression": false,
           "asc": true,
@@ -2962,69 +3057,6 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "payment_plan_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "plan_installments_plan_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "property_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "payment_plans_property_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "status",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "payment_plans_status_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
           "value": "user_id",
           "isExpression": false,
           "asc": true,
@@ -3230,6 +3262,69 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "property_installments"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "purchase_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "property_payment_verifications_purchase_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "property_payment_verifications_user_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "property_payment_verifications_status_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "property_payment_verifications"
     },
     {
       "nameExplicit": true,
@@ -3580,40 +3675,6 @@
     {
       "nameExplicit": false,
       "columns": [
-        "payment_plan_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "payment_plans",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "payment_plan_installments_payment_plan_id_payment_plans_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "property_id"
-      ],
-      "schemaTo": "public",
-      "tableTo": "properties",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "payment_plans_property_id_properties_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "payment_plans"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
         "user_id"
       ],
       "schemaTo": "public",
@@ -3733,6 +3794,57 @@
     {
       "nameExplicit": false,
       "columns": [
+        "purchase_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "property_purchases",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "property_payment_verifications_knBmNa9uKqpe_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "property_payment_verifications_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "reviewed_by"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "property_payment_verifications_reviewed_by_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "property_payment_verifications"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "user_id"
       ],
       "schemaTo": "public",
@@ -3770,13 +3882,13 @@
         "payment_plan_id"
       ],
       "schemaTo": "public",
-      "tableTo": "payment_plans",
+      "tableTo": "property_payment_plan",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
-      "name": "property_purchases_payment_plan_id_payment_plans_id_fkey",
+      "name": "property_purchases_unyn1BBHCmWq_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "property_purchases"
@@ -3853,26 +3965,6 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "payment_plan_installments_pkey",
-      "schema": "public",
-      "table": "payment_plan_installments",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "payment_plans_pkey",
-      "schema": "public",
-      "table": "payment_plans",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
       "name": "payments_pkey",
       "schema": "public",
       "table": "payments",
@@ -3913,6 +4005,16 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "property_payment_verifications_pkey",
+      "schema": "public",
+      "table": "property_payment_verifications",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "property_purchases_pkey",
       "schema": "public",
       "table": "property_purchases",
@@ -3927,30 +4029,6 @@
       "schema": "public",
       "table": "sessions",
       "entityType": "pks"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        "payment_plan_id",
-        "installment_number"
-      ],
-      "nullsNotDistinct": false,
-      "name": "plan_installment_number_unique",
-      "entityType": "uniques",
-      "schema": "public",
-      "table": "payment_plan_installments"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        "property_id",
-        "name"
-      ],
-      "nullsNotDistinct": false,
-      "name": "payment_plan_property_name_unique",
-      "entityType": "uniques",
-      "schema": "public",
-      "table": "payment_plans"
     },
     {
       "nameExplicit": true,
@@ -3989,6 +4067,17 @@
     {
       "nameExplicit": false,
       "columns": [
+        "slug"
+      ],
+      "nullsNotDistinct": false,
+      "name": "estate_names_slug_key",
+      "schema": "public",
+      "table": "estate_names",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "name"
       ],
       "nullsNotDistinct": false,
@@ -4017,6 +4106,17 @@
       "name": "payments_reference_key",
       "schema": "public",
       "table": "payments",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "slug"
+      ],
+      "nullsNotDistinct": false,
+      "name": "properties_slug_key",
+      "schema": "public",
+      "table": "properties",
       "entityType": "uniques"
     },
     {

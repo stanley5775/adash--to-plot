@@ -13,7 +13,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const siteUrl = "http://localhost:3001";
+const siteUrl = "https://adashetoplot.org";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
