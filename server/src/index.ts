@@ -12,7 +12,8 @@ import contactRouter from "./route/contact.route";
 const app = new Hono();
 const allowedOrigins = [
   "http://localhost:3001",
-  // "https://melodai-cyan.vercel.app",
+  "https://adashe-to-plot.vercel.app",
+  "https://adashe-to-plot.vercel.app",
 ];
 app.use(logger());
 app.use(
