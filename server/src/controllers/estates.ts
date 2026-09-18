@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { and, eq, gt, gte, lte, ilike, or } from "drizzle-orm";
+import { and, eq, gt, gte, lte, ilike, or, count, sql } from "drizzle-orm";
 import { verify, sign } from "hono/jwt";
 import { getCookie, setCookie } from "hono/cookie";
 
@@ -14,6 +14,7 @@ import {
   atiMemberships,
   PropertyPaymentPlan,
 } from "../db/schema";
+
 export const getPropertyById = async (c: Context) => {
   try {
     const propertyId = c.req.param("propertyId");
@@ -45,7 +46,7 @@ export const getPropertyById = async (c: Context) => {
       .from(properties)
       .innerJoin(estateNames, eq(properties.estateId, estateNames.id))
       .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
-      .where(eq(properties.id, propertyId))
+      .where(eq(properties.slug, propertyId))
       .limit(1);
 
     if (!property) {
@@ -191,7 +192,7 @@ export const getPropertyById = async (c: Context) => {
         ? await db
             .select()
             .from(PropertyPaymentPlan)
-            .where(eq(PropertyPaymentPlan.propertyId, propertyId))
+            .where(eq(PropertyPaymentPlan.propertyId, property.property.id))
         : [];
 
     // ============================================================
@@ -332,7 +333,7 @@ export const getAllEstates = async (c: Context) => {
 
     const estates = await db
       .select({
-        estateId: estateNames.id,
+        estateId: estateNames.slug,
         estateName: estateNames.name,
         description: estateNames.description,
         city: estateNames.city,
@@ -420,7 +421,7 @@ export const getPropertiesByEstate = async (c: Context) => {
         createdAt: estateNames.createdAt,
       })
       .from(estateNames)
-      .where(eq(estateNames.id, estateId))
+      .where(eq(estateNames.slug, estateId))
       .limit(1);
 
     if (!estate) {
@@ -437,7 +438,7 @@ export const getPropertiesByEstate = async (c: Context) => {
     // Get properties inside the estate
     const propertiesList = await db
       .select({
-        id: properties.id,
+        id: properties.slug,
         estateId: properties.estateId,
         state: properties.state,
 
@@ -451,7 +452,7 @@ export const getPropertiesByEstate = async (c: Context) => {
       })
       .from(properties)
       .leftJoin(propertiesImage, eq(propertiesImage.estateId, properties.id))
-      .where(eq(properties.estateId, estateId));
+      .where(eq(properties.estateId, estate.id));
 
     return c.json(
       {
@@ -520,7 +521,7 @@ export const getAllActiveProperties = async (c: Context) => {
 
     const propertiesList = await db
       .select({
-        id: properties.id,
+        id: properties.slug,
         estateId: properties.estateId,
         estateName: estateNames.name,
 
@@ -576,6 +577,59 @@ export const getAllActiveProperties = async (c: Context) => {
         filters: {
           states: [],
         },
+      },
+      500,
+    );
+  }
+};
+
+export const getPublicStats = async (c: Context) => {
+  try {
+    // TOTAL ESTATES
+
+    const [estateResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(estateNames);
+
+    const [activePropertyResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(properties)
+      .where(eq(properties.status, "ACTIVE"));
+
+    const [customerResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(users)
+      .where(sql`${users.role} = 'CUSTOMER'`);
+
+    const currentYear = new Date().getFullYear();
+
+    const yearsOfExperience = Math.max(currentYear - env.COMPANY_START_YEAR, 0);
+    return c.json({
+      success: true,
+      message: "Public statistics fetched successfully",
+      data: {
+        estates: Number(estateResult?.total ?? 0),
+
+        propertyTypes: Number(activePropertyResult?.total ?? 0),
+
+        customersOnboarded: Number(customerResult?.total ?? 0),
+
+        yearsOfExperience,
+      },
+    });
+  } catch (error) {
+    console.error("GET PUBLIC STATS ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch public statistics",
       },
       500,
     );

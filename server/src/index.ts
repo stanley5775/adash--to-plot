@@ -7,6 +7,7 @@ import users from "./route/users.routes";
 import ati from "./route/ati.members";
 import estate from "./route/estate.route";
 import propertyPaymentRoutes from "./route/Purchase.route";
+import contactRouter from "./route/contact.route";
 
 const app = new Hono();
 const allowedOrigins = [
@@ -43,6 +44,7 @@ app.route("/api/users", users);
 app.route("/api/ati", ati);
 app.route("/api/estate", estate);
 app.route("/api/property-payment", propertyPaymentRoutes);
+app.route("/api/v1", contactRouter);
 app.onError((err, c) => {
   return c.json(
     {

@@ -16,9 +16,9 @@ import {
 import { uploadImage } from "../services/uploadImage";
 import STMPservice from "../services/email";
 
-/**
- * CUSTOMER
- * Create a property purchase.
+/*
+ CUSTOMER
+  Create a property purchase.
  */
 
 export const createPropertyPurchase = async (c: Context) => {

@@ -179,7 +179,7 @@ export const passwordResetOtps = pgTable(
 export const estateNames = pgTable("estate_names", {
   id: uuid("id").defaultRandom().notNull().unique(),
   description: text("description"),
-
+  slug: varchar("slug").unique(),
   mainImageUrl: text("main_image_url"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),
@@ -209,7 +209,7 @@ export const properties = pgTable(
       }),
     status: propertyStatusEnum("status").notNull().default("ACTIVE"),
     location: text("location").notNull(),
-
+    slug: varchar("slug").notNull().unique(),
     city: text("city").notNull(),
 
     state: text("state").notNull(),

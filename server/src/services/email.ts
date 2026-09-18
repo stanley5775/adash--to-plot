@@ -2,9 +2,12 @@ import path from "path";
 
 import fs from "fs";
 import { config } from "dotenv";
-
 import { Resend } from "resend";
 import { env } from "../env";
+import { users } from "../db/schema";
+import { db } from "../db/db";
+import { eq } from "drizzle-orm";
+
 const resend = new Resend(env.RESEND_API_KEY);
 config();
 class STMPservice {
@@ -14,6 +17,13 @@ class STMPservice {
     "utils",
     "template",
     "application-success.html",
+  );
+  private static contactTemplate = path.join(
+    process.cwd(),
+    "src",
+    "utils",
+    "template",
+    "contact-form.html",
   );
 
   private static atiMembershipTemplate = path.join(
@@ -57,10 +67,17 @@ class STMPservice {
 
   private static from =
     process.env.EMAIL_FROM || "Adashè to Plot <hello@adashetoplot.org>";
-  private static adminEmail =
-    process.env.ADMIN_EMAIL || "admin@adashetoplot.org";
-  // private static EMAIL_API_URL =
-  //   "https://emailsender-theta.vercel.app/send-email";
+
+  private static async getAdminEmails(): Promise<string[]> {
+    const admins = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.role, "ADMIN"));
+    return admins
+      .map((admin) => admin.email)
+      .filter((email): email is string => Boolean(email));
+  }
+
   public static async applicationSuccess(
     user: {
       full_name: string;
@@ -205,10 +222,14 @@ class STMPservice {
         .replace(/{{purchase_id}}/g, data.purchaseId)
         .replace(/{{receipt_url}}/g, data.receiptUrl)
         .replace(/{{year}}/g, new Date().getFullYear().toString());
-
+      const adminEmails = await this.getAdminEmails();
+      if (adminEmails.length === 0) {
+        console.error("No ADMIN users found in database.");
+        return;
+      }
       const { data: email, error } = await resend.emails.send({
         from: this.from,
-        to: this.adminEmail,
+        to: adminEmails,
         subject: `New Property Payment Receipt — ₦${data.amount.toLocaleString("en-NG")}`,
         html: htmlContent,
         text: `
@@ -341,6 +362,49 @@ Adashè to Plot
       });
     } catch (error) {
       console.error("PROPERTY PAYMENT REJECTED EMAIL ERROR:", error);
+
+      throw error;
+    }
+  }
+
+  public static async contactFormSubmitted(data: {
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    message: string;
+  }) {
+    try {
+      const htmlContent = fs
+        .readFileSync(this.contactTemplate, "utf-8")
+        .replace(/{{full_name}}/g, data.fullName)
+        .replace(/{{phone_number}}/g, data.phoneNumber)
+        .replace(/{{email}}/g, data.email)
+        .replace(/{{message}}/g, data.message)
+        .replace(/{{year}}/g, new Date().getFullYear().toString());
+      const adminEmails = await this.getAdminEmails();
+      if (adminEmails.length === 0) {
+        console.error("No ADMIN users found in database.");
+        return;
+      }
+      const { data: email, error } = await resend.emails.send({
+        from: this.from,
+        subject: `New Contact Message — ${data.fullName}`,
+        to: adminEmails,
+        html: htmlContent,
+        text: `
+New Contact Form Message
+
+Full Name: ${data.fullName}
+Phone Number: ${data.phoneNumber}
+Email: ${data.email}
+
+Message:
+${data.message}
+
+You can reply directly to ${data.email}.`,
+      });
+    } catch (error) {
+      console.error("CONTACT FORM EMAIL ERROR:", error);
 
       throw error;
     }

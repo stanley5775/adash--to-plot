@@ -6,13 +6,26 @@ import {
   checkAtiMembership,
 } from "../controllers/ati.member";
 import { requireAuth } from "../middleware/authMiddleware";
+import { rateLimiter } from "../middleware/rateLimiter";
+import { authorize } from "../middleware/rolemiddleware";
 
-createAtiMembership;
 const ati = new Hono();
 
-ati.post("/membership", requireAuth, createAtiMembership);
+ati.use("*", requireAuth);
+ati.use("*", authorize("CUSTOMER"));
+ati.post(
+  "/membership",
+  requireAuth,
+  rateLimiter(15 * 60 * 1000, 10),
+  createAtiMembership,
+);
 
-ati.post("/membership/verify", requireAuth, verifyAtiMembershipPayment);
+ati.post(
+  "/membership/verify",
+  requireAuth,
+  rateLimiter(15 * 60 * 1000, 10),
+  verifyAtiMembershipPayment,
+);
 
 ati.get("/membership/check", requireAuth, checkAtiMembership);
 

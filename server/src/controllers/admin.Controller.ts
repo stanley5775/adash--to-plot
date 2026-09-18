@@ -17,86 +17,43 @@ import {
 } from "../db/schema";
 import { createEstateSchema } from "../validators/estateV";
 import { uploadImage } from "../services/uploadImage";
-import { and, eq, ne, desc, asc, or } from "drizzle-orm";
-import { createPropertyPaymentPlansSchema } from "../validators/propertyPlan";
+import { and, eq, ne, desc, asc, or, sum, count, sql } from "drizzle-orm";
+
 import { createEstateNameSchema } from "../validators/createEstate";
 import { deleteImage } from "../utils/deleteImage";
 import STMPservice from "../services/email";
-type PaymentPlanInsert = {
-  propertyId: string;
-  estateId: string;
-  name: string;
-  durationMonths: number | null;
-  totalAmount: string;
-  monthlyAmount: string | null;
-  interestRate: string;
-};
+
+import {
+  createEstateService,
+  createEstateNameService,
+  createPropertyPaymentPlansService,
+} from "../services/estateService";
+
 export const createEstate = async (c: Context) => {
   try {
     const formData = await c.req.formData();
 
     const body = {
       estateNameId: formData.get("estateNameId")?.toString().trim() ?? "",
+
       location: formData.get("location")?.toString() ?? "",
+
       city: formData.get("city")?.toString() ?? "",
+
       state: formData.get("state")?.toString() ?? "",
+
       description: formData.get("description")?.toString().trim() || null,
+
       startingPrice: formData.get("startingPrice")?.toString().trim() ?? "",
+
       totalPlots: formData.get("totalPlots")?.toString().trim() ?? "",
+
       features: formData.get("features")?.toString().trim() ?? "",
+
       nearbyLandmarks: formData.get("nearbyLandmarks")?.toString().trim() ?? "",
+
       status: formData.get("status")?.toString().trim() || "ACTIVE",
     };
-
-    const result = createEstateSchema.safeParse(body);
-
-    if (!result.success) {
-      return c.json(
-        {
-          success: false,
-          message: "Validation failed",
-          errors: result.error.issues.map((issue) => issue.message),
-        },
-        422,
-      );
-    }
-
-    const data = result.data;
-
-    // CHECK ESTATE NAME EXISTS BEFORE UPLOADING IMAGES
-    const [estateName] = await db
-      .select({
-        id: estateNames.id,
-        name: estateNames.name,
-      })
-      .from(estateNames)
-      .where(eq(estateNames.id, data.estateNameId))
-      .limit(1);
-
-    if (!estateName) {
-      return c.json(
-        {
-          success: false,
-          message: "Selected estate name does not exist",
-          data: null,
-        },
-        404,
-      );
-    }
-
-    const features = data.features
-      ? data.features
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
-
-    const nearbyLandmarks = data.nearbyLandmarks
-      ? data.nearbyLandmarks
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [];
 
     const mainImage = formData.get("mainImage");
 
@@ -105,85 +62,54 @@ export const createEstate = async (c: Context) => {
       .filter((file): file is File => file instanceof File && file.size > 0)
       .slice(0, 4);
 
-    // UPLOAD IMAGES IN PARALLEL
-    const [mainImageData, uploadedImages] = await Promise.all([
-      mainImage instanceof File && mainImage.size > 0
-        ? uploadImage(mainImage)
-        : Promise.resolve(null),
-
-      Promise.all(galleryFiles.map((file) => uploadImage(file))),
-    ]);
-
-    // CREATE ESTATE
-    const [estate] = await db
-      .insert(properties)
-      .values({
-        // IMPORTANT
-        estateId: data.estateNameId,
-
-        location: data.location,
-        city: data.city,
-        state: data.state,
-        description: data.description,
-        startingPrice: data.startingPrice.toString(),
-        totalPlots: data.totalPlots,
-        features,
-        nearbyLandmarks,
-      })
-      .returning();
-
-    // SAVE IMAGES
-    const hasImages = mainImageData || uploadedImages.length > 0;
-
-    if (hasImages) {
-      await db.insert(propertiesImage).values({
-        estateId: estate.id,
-
-        mainImgUrl: mainImageData?.url ?? null,
-        mainImagePublicId: mainImageData?.publicId ?? null,
-
-        image1Url: uploadedImages[0]?.url ?? null,
-        image1PublicId: uploadedImages[0]?.publicId ?? null,
-
-        image2Url: uploadedImages[1]?.url ?? null,
-        image2PublicId: uploadedImages[1]?.publicId ?? null,
-
-        image3Url: uploadedImages[2]?.url ?? null,
-        image3PublicId: uploadedImages[2]?.publicId ?? null,
-
-        image4Url: uploadedImages[3]?.url ?? null,
-        image4PublicId: uploadedImages[3]?.publicId ?? null,
-      });
-    }
+    const result = await createEstateService({
+      body,
+      mainImage: mainImage instanceof File ? mainImage : null,
+      galleryFiles,
+    });
 
     return c.json(
       {
         success: true,
         message: "Estate created successfully",
-        data: {
-          estate,
-          images: {
-            mainImgUrl: mainImageData?.url ?? null,
-            mainImagePublicId: mainImageData?.publicId ?? null,
-
-            image1Url: uploadedImages[0]?.url ?? null,
-            image1PublicId: uploadedImages[0]?.publicId ?? null,
-
-            image2Url: uploadedImages[1]?.url ?? null,
-            image2PublicId: uploadedImages[1]?.publicId ?? null,
-
-            image3Url: uploadedImages[2]?.url ?? null,
-            image3PublicId: uploadedImages[2]?.publicId ?? null,
-
-            image4Url: uploadedImages[3]?.url ?? null,
-            image4PublicId: uploadedImages[3]?.publicId ?? null,
-          },
-        },
+        data: result,
       },
       201,
     );
   } catch (error) {
     console.error("CREATE ESTATE ERROR:", error);
+
+    // VALIDATION ERROR
+    if (error instanceof Error) {
+      try {
+        const parsed = JSON.parse(error.message);
+
+        if (parsed.type === "VALIDATION_ERROR") {
+          return c.json(
+            {
+              success: false,
+              message: "Validation failed",
+              errors: parsed.errors,
+            },
+            422,
+          );
+        }
+      } catch {
+        // Normal Error message
+      }
+
+      // ESTATE NAME NOT FOUND
+      if (error.message === "Selected estate name does not exist") {
+        return c.json(
+          {
+            success: false,
+            message: error.message,
+            data: null,
+          },
+          404,
+        );
+      }
+    }
 
     return c.json(
       {
@@ -211,91 +137,12 @@ export const createEstateName = async (c: Context) => {
       bankName: formData.get("bankName")?.toString().trim() ?? "",
     };
 
-    const result = createEstateNameSchema.safeParse(body);
-
-    if (!result.success) {
-      return c.json(
-        {
-          success: false,
-          message: "Validation failed",
-          errors: result.error.issues.map((issue) => issue.message),
-        },
-        422,
-      );
-    }
-
-    const data = result.data;
-
-    // GET ESTATE IMAGE
     const mainImage = formData.get("mainImage");
 
-    if (!(mainImage instanceof File) || mainImage.size === 0) {
-      return c.json(
-        {
-          success: false,
-          message: "Estate main image is required",
-          data: null,
-        },
-        422,
-      );
-    }
-
-    // CHECK IF ESTATE NAME ALREADY EXISTS
-    const [existingEstate] = await db
-      .select({
-        id: estateNames.id,
-        name: estateNames.name,
-      })
-      .from(estateNames)
-      .where(eq(estateNames.name, data.name))
-      .limit(1);
-
-    if (existingEstate) {
-      return c.json(
-        {
-          success: false,
-          message: "Estate name already exists",
-          data: existingEstate,
-        },
-        409,
-      );
-    }
-
-    // UPLOAD ESTATE MAIN IMAGE TO CLOUDINARY
-    const mainImageData = await uploadImage(mainImage);
-
-    // CREATE ESTATE NAME
-    const [estate] = await db
-      .insert(estateNames)
-      .values({
-        name: data.name,
-        description: data.description,
-        city: data.city,
-        state: data.state,
-        startingPrice: data.startingPrice,
-
-        // CLOUDINARY IMAGE
-        mainImageUrl: mainImageData.url,
-        mainImagePublicId: mainImageData.publicId,
-
-        accountName: data.accountName,
-        accountNumber: data.accountNumber,
-        bankName: data.bankName,
-      })
-      .returning({
-        id: estateNames.id,
-        name: estateNames.name,
-        description: estateNames.description,
-
-        mainImageUrl: estateNames.mainImageUrl,
-        mainImagePublicId: estateNames.mainImagePublicId,
-
-        accountName: estateNames.accountName,
-        accountNumber: estateNames.accountNumber,
-        bankName: estateNames.bankName,
-
-        createdAt: estateNames.createdAt,
-      });
+    const estate = await createEstateNameService({
+      body,
+      mainImage: mainImage instanceof File ? mainImage : (null as never),
+    });
 
     return c.json(
       {
@@ -307,6 +154,50 @@ export const createEstateName = async (c: Context) => {
     );
   } catch (error) {
     console.error("CREATE ESTATE NAME ERROR:", error);
+
+    // VALIDATION ERROR
+    if (error instanceof Error) {
+      try {
+        const parsed = JSON.parse(error.message);
+
+        if (parsed.type === "VALIDATION_ERROR") {
+          return c.json(
+            {
+              success: false,
+              message: "Validation failed",
+              errors: parsed.errors,
+            },
+            422,
+          );
+        }
+
+        // ESTATE NAME ALREADY EXISTS
+        if (parsed.type === "ESTATE_NAME_EXISTS") {
+          return c.json(
+            {
+              success: false,
+              message: "Estate name already exists",
+              data: parsed.data,
+            },
+            409,
+          );
+        }
+      } catch {
+        // Normal Error
+      }
+
+      // IMAGE REQUIRED
+      if (error.message === "Estate main image is required") {
+        return c.json(
+          {
+            success: false,
+            message: error.message,
+            data: null,
+          },
+          422,
+        );
+      }
+    }
 
     return c.json(
       {
@@ -369,195 +260,12 @@ export const createPropertyPaymentPlans = async (c: Context) => {
   try {
     const propertyId = c.req.param("propertyId");
 
-    if (!propertyId) {
-      return c.json(
-        {
-          success: false,
-          message: "Property ID is required",
-          data: null,
-        },
-        400,
-      );
-    }
-
-    // VALIDATE REQUEST
-
     const body = await c.req.json();
 
-    const result = createPropertyPaymentPlansSchema.safeParse(body);
-
-    if (!result.success) {
-      return c.json(
-        {
-          success: false,
-          message: "Validation failed",
-          errors: result.error.issues.map((issue) => ({
-            field: issue.path.join("."),
-            message: issue.message,
-          })),
-          data: null,
-        },
-        422,
-      );
-    }
-
-    const { plans } = result.data;
-
-    if (!plans || plans.length === 0) {
-      return c.json(
-        {
-          success: false,
-          message: "At least one payment plan is required",
-          data: null,
-        },
-        400,
-      );
-    }
-
-    // GET PROPERTY
-
-    const [property] = await db
-      .select({
-        id: properties.id,
-        estateId: properties.estateId,
-        startingPrice: properties.startingPrice,
-      })
-      .from(properties)
-      .where(eq(properties.id, propertyId))
-      .limit(1);
-
-    if (!property) {
-      return c.json(
-        {
-          success: false,
-          message: "Property not found",
-          data: null,
-        },
-        404,
-      );
-    }
-
-    // VALIDATE STARTING PRICE
-
-    const startingPrice = Number(property.startingPrice);
-
-    if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
-      return c.json(
-        {
-          success: false,
-          message: "Property starting price is invalid",
-          data: null,
-        },
-        422,
-      );
-    }
-
-    // CHECK DUPLICATES
-
-    const durations = plans.map((plan) => plan.durationMonths);
-
-    const uniqueDurations = new Set(durations);
-
-    if (uniqueDurations.size !== durations.length) {
-      return c.json(
-        {
-          success: false,
-          message: "You cannot add the same payment duration more than once.",
-          data: null,
-        },
-        409,
-      );
-    }
-
-    // GET EXISTING PLANS
-
-    const existingPlans = await db
-      .select({
-        id: PropertyPaymentPlan.id,
-        name: PropertyPaymentPlan.name,
-        durationMonths: PropertyPaymentPlan.durationMonths,
-      })
-      .from(PropertyPaymentPlan)
-      .where(eq(PropertyPaymentPlan.propertyId, propertyId));
-
-    // CHECK IF SELECTED PLANS
-
-    for (const plan of plans) {
-      const alreadyExists = existingPlans.some(
-        (existingPlan) => existingPlan.durationMonths === plan.durationMonths,
-      );
-
-      if (alreadyExists) {
-        return c.json(
-          {
-            success: false,
-            message: `${plan.durationMonths}-month payment plan already exists for this property.`,
-            data: null,
-          },
-          409,
-        );
-      }
-    }
-
-    // PREPARE PAYMENT PLANS
-
-    const paymentPlans: PaymentPlanInsert[] = plans.map((plan) => {
-      const months = plan.durationMonths;
-
-      let interestRate = 0;
-
-      // 6 months = 0%
-      // 12 months = 9%
-      // 18 months = 9%
-      // 24 months = 11%
-
-      if (months === 12 || months === 18) {
-        interestRate = 9;
-      } else if (months === 24) {
-        interestRate = 11;
-      }
-
-      const interestAmount = startingPrice * (interestRate / 100);
-
-      const totalAmount = startingPrice + interestAmount;
-
-      const monthlyAmount = totalAmount / months;
-
-      return {
-        propertyId: property.id,
-        estateId: property.estateId,
-        name: `${months} Months`,
-        durationMonths: months,
-        totalAmount: totalAmount.toFixed(2),
-        monthlyAmount: monthlyAmount.toFixed(2),
-        interestRate: interestRate.toFixed(2),
-      };
-    });
-
-    // ADD OUTRIGHT ONLY ONCE
-
-    const outrightExists = existingPlans.some(
-      (plan) => plan.durationMonths === null,
+    const createdPlans = await createPropertyPaymentPlansService(
+      propertyId,
+      body,
     );
-
-    if (!outrightExists) {
-      paymentPlans.unshift({
-        propertyId: property.id,
-        estateId: property.estateId,
-        name: "Outright",
-        durationMonths: null,
-        totalAmount: startingPrice.toFixed(2),
-        monthlyAmount: null,
-        interestRate: "0.00",
-      });
-    }
-
-    // INSERT
-
-    const createdPlans = await db
-      .insert(PropertyPaymentPlan)
-      .values(paymentPlans)
-      .returning();
 
     return c.json(
       {
@@ -570,6 +278,100 @@ export const createPropertyPaymentPlans = async (c: Context) => {
   } catch (error) {
     console.error("CREATE PROPERTY PAYMENT PLANS ERROR:", error);
 
+    if (error instanceof Error) {
+      try {
+        const parsed = JSON.parse(error.message);
+
+        // PROPERTY ID REQUIRED
+        if (parsed.type === "PROPERTY_ID_REQUIRED") {
+          return c.json(
+            {
+              success: false,
+              message: "Property ID is required",
+              data: null,
+            },
+            400,
+          );
+        }
+
+        // VALIDATION ERROR
+        if (parsed.type === "VALIDATION_ERROR") {
+          return c.json(
+            {
+              success: false,
+              message: "Validation failed",
+              errors: parsed.errors,
+              data: null,
+            },
+            422,
+          );
+        }
+
+        // NO PAYMENT PLANS
+        if (parsed.type === "NO_PAYMENT_PLANS") {
+          return c.json(
+            {
+              success: false,
+              message: "At least one payment plan is required",
+              data: null,
+            },
+            400,
+          );
+        }
+
+        // PROPERTY NOT FOUND
+        if (parsed.type === "PROPERTY_NOT_FOUND") {
+          return c.json(
+            {
+              success: false,
+              message: "Property not found",
+              data: null,
+            },
+            404,
+          );
+        }
+
+        // INVALID STARTING PRICE
+        if (parsed.type === "INVALID_STARTING_PRICE") {
+          return c.json(
+            {
+              success: false,
+              message: "Property starting price is invalid",
+              data: null,
+            },
+            422,
+          );
+        }
+
+        // DUPLICATE DURATIONS
+        if (parsed.type === "DUPLICATE_DURATIONS") {
+          return c.json(
+            {
+              success: false,
+              message:
+                "You cannot add the same payment duration more than once.",
+              data: null,
+            },
+            409,
+          );
+        }
+
+        // PAYMENT PLAN ALREADY EXISTS
+        if (parsed.type === "PAYMENT_PLAN_EXISTS") {
+          return c.json(
+            {
+              success: false,
+              message: `${parsed.durationMonths}-month payment plan already exists for this property.`,
+              data: null,
+            },
+            409,
+          );
+        }
+      } catch {
+        // Normal Error
+      }
+    }
+
     return c.json(
       {
         success: false,
@@ -581,6 +383,7 @@ export const createPropertyPaymentPlans = async (c: Context) => {
     );
   }
 };
+
 export const getAllProperties = async (c: Context) => {
   try {
     const allProperties = await db
@@ -2535,6 +2338,186 @@ export const rejectPropertyPayment = async (c: Context) => {
       {
         success: false,
         message: "Failed to reject payment",
+      },
+      500,
+    );
+  }
+};
+
+export const getAdminDashboardStats = async (c: Context) => {
+  try {
+    const authUser = c.get("userId");
+
+    if (!authUser) {
+      return c.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        401,
+      );
+    }
+
+    // --------------------------------------------------
+    // 1. TOTAL ESTATES
+    // --------------------------------------------------
+    const [estateResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(estateNames);
+
+    // --------------------------------------------------
+    // 2. TOTAL PROPERTIES
+    // --------------------------------------------------
+    const [propertyResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(properties);
+
+    // --------------------------------------------------
+    // 3. TOTAL PLOTS
+    // --------------------------------------------------
+    const [plotResult] = await db
+      .select({
+        totalPlots: sql<string>`
+          COALESCE(
+            SUM(${properties.totalPlots}),
+            0
+          )
+        `,
+      })
+      .from(properties);
+
+    // 4. RESERVED PLOTS
+    //
+
+    const [reservedResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(propertyPurchases)
+      .where(eq(propertyPurchases.status, "ACTIVE"));
+
+    // --------------------------------------------------
+    // 5. SOLD PLOTS
+
+    const [soldResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(propertyPurchases)
+      .where(eq(propertyPurchases.status, "COMPLETED"));
+
+    // 6. TOTAL CUSTOMERS
+
+    const [customerResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(users)
+      .where(eq(users.role, "CUSTOMER"));
+
+    // 7. ATI PLUS MEMBERS
+
+    const [atiResult] = await db
+      .select({
+        total: count(),
+      })
+      .from(atiMemberships)
+      .where(eq(atiMemberships.status, "ACTIVE"));
+
+    // 8. TOTAL SALES
+    //
+
+    const [salesResult] = await db
+      .select({
+        totalSales: sql<string>`
+          COALESCE(
+            SUM(${propertyPurchases.amountPaid}),
+            0
+          )
+        `,
+      })
+      .from(propertyPurchases)
+      .where(
+        or(
+          eq(propertyPurchases.status, "ACTIVE"),
+          eq(propertyPurchases.status, "COMPLETED"),
+        ),
+      );
+
+    // 9. OUTSTANDING PAYMENTS
+    //
+    // Only ACTIVE purchases have an unpaid balance.
+    // COMPLETED purchases should have balance = 0.
+
+    const [outstandingResult] = await db
+      .select({
+        outstandingPayments: sql<string>`
+          COALESCE(
+            SUM(${propertyPurchases.balance}),
+            0
+          )
+        `,
+      })
+      .from(propertyPurchases)
+      .where(eq(propertyPurchases.status, "ACTIVE"));
+
+    // CONVERT VALUES
+
+    const totalEstates = Number(estateResult?.total ?? 0);
+
+    const totalProperties = Number(propertyResult?.total ?? 0);
+
+    const totalPlots = Number(plotResult?.totalPlots ?? 0);
+
+    const reservedPlots = Number(reservedResult?.total ?? 0);
+
+    const soldPlots = Number(soldResult?.total ?? 0);
+
+    const totalCustomers = Number(customerResult?.total ?? 0);
+
+    const atiPlusMembers = Number(atiResult?.total ?? 0);
+
+    const totalSales = Number(salesResult?.totalSales ?? 0);
+
+    const outstandingPayments = Number(
+      outstandingResult?.outstandingPayments ?? 0,
+    );
+
+    // AVAILABLE PLOTS
+
+    const availablePlots = Math.max(totalPlots - reservedPlots - soldPlots, 0);
+
+    return c.json({
+      success: true,
+      message: "Admin dashboard statistics fetched successfully",
+
+      data: {
+        totalEstates,
+        totalProperties,
+
+        totalPlots,
+        availablePlots,
+        reservedPlots,
+        soldPlots,
+
+        totalCustomers,
+        atiPlusMembers,
+
+        totalSales,
+        outstandingPayments,
+      },
+    });
+  } catch (error) {
+    console.error("GET ADMIN DASHBOARD STATS ERROR:", error);
+
+    return c.json(
+      {
+        success: false,
+        message: "Failed to fetch admin dashboard statistics",
       },
       500,
     );

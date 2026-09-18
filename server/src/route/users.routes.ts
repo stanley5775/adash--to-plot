@@ -12,14 +12,25 @@ import {
 } from "../controllers/users";
 import { requireAuth } from "../middleware/authMiddleware";
 import { authorize } from "../middleware/rolemiddleware";
+import { rateLimiter } from "../middleware/rateLimiter";
 
 const users = new Hono();
 
 users.use("*", requireAuth);
 
-users.post("/create_application", authorize("CUSTOMER"), createApplication);
+users.post(
+  "/create_application",
+  authorize("CUSTOMER"),
+  rateLimiter(15 * 60 * 1000, 5),
+  createApplication,
+);
 
-users.post("/verify", authorize("CUSTOMER"), verifyApplicationPayment);
+users.post(
+  "/verify",
+  authorize("CUSTOMER"),
+  rateLimiter(15 * 60 * 1000, 10),
+  verifyApplicationPayment,
+);
 
 users.get("/check-application", checkApplication);
 users.get("/dashboard", getUserDashboard);
