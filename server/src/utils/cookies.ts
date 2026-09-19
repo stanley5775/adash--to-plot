@@ -1,14 +1,13 @@
 import { setCookie, deleteCookie } from "hono/cookie";
 import type { Context } from "hono";
 
-const isProduction = process.env.NODE_ENV === "production";
-
 export const FIFTEEN_MINUTES_SECONDS = 15 * 60;
+export const REFRESH_TOKEN_SECONDS = 60 * 60 * 24 * 7;
 
 const cookieOptions = {
   httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? ("None" as const) : ("Lax" as const),
+  secure: true,
+  sameSite: "None" as const,
   path: "/",
 };
 
@@ -18,28 +17,25 @@ export function setAuthCookies(
   refreshToken: string,
 ) {
   setCookie(c, "accessToken", accessToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "None" : "Lax",
-    path: "/",
+    ...cookieOptions,
     maxAge: FIFTEEN_MINUTES_SECONDS,
   });
 
   setCookie(c, "refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "None" : "Lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    ...cookieOptions,
+    maxAge: REFRESH_TOKEN_SECONDS,
   });
 }
+
 export function clearAuthCookies(c: Context) {
   deleteCookie(c, "accessToken", {
-    path: "/",
+    ...cookieOptions,
+    maxAge: 0,
   });
 
   deleteCookie(c, "refreshToken", {
-    path: "/",
+    ...cookieOptions,
+    maxAge: 0,
   });
 
   return c.json(

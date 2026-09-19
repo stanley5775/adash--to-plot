@@ -1,26 +1,28 @@
 import type { Context, Next } from "hono";
 import { sign, verify } from "hono/jwt";
-import { getCookie, setCookie } from "hono/cookie";
+import { getCookie } from "hono/cookie";
 import { and, eq } from "drizzle-orm";
-import { env } from "../env";
 
+import { env } from "../env";
 import { db } from "../db/db";
 import { sessions, users } from "../db/schema";
 
-import { clearAuthCookies, FIFTEEN_MINUTES_SECONDS } from "../utils/cookies";
-
-const isProduction = process.env.NODE_ENV === "production";
+import {
+  clearAuthCookies,
+  setAuthCookies,
+  FIFTEEN_MINUTES_SECONDS,
+} from "../utils/cookies";
 
 export async function requireAuth(c: Context, next: Next) {
   try {
     const accessToken = getCookie(c, "accessToken");
-    const refreshToken1 = getCookie(c, "refreshToken");
+    const refreshToken = getCookie(c, "refreshToken");
 
     console.log("AUTH DEBUG");
     console.log("accessToken exists:", !!accessToken);
-    console.log("refreshToken exists:", !!refreshToken1);
+    console.log("refreshToken exists:", !!refreshToken);
 
-    // 1. Try access token
+    // 1. Access token
     if (accessToken) {
       try {
         const payload = await verify(
@@ -31,24 +33,9 @@ export async function requireAuth(c: Context, next: Next) {
 
         const userId = payload.id as string;
         const role = payload.role as string;
-        console.log("AUTH PAYLOAD:", payload);
 
-        console.log("AUTH USER ID:", userId);
-        console.log("AUTH ROLE:", role);
-        if (!userId) {
-          console.log("NO USER ID IN TOKEN");
+        if (!userId || !role) {
           return clearAuthCookies(c);
-        }
-
-        if (!role) {
-          console.log("NO ROLE IN TOKEN");
-          return c.json(
-            {
-              success: false,
-              message: "Token has no role",
-            },
-            401,
-          );
         }
 
         c.set("userId", {
@@ -56,21 +43,17 @@ export async function requireAuth(c: Context, next: Next) {
           role,
         });
 
-        // Access token is valid
         return next();
       } catch {
-        console.log("Access token expired/invalid. Trying refresh token...");
+        console.log("Access token expired/invalid");
       }
     }
 
-    // 2. Access token missing/expired → try refresh token
-    const refreshToken = getCookie(c, "refreshToken");
-
+    // 2. Refresh token
     if (!refreshToken) {
       return clearAuthCookies(c);
     }
 
-    // 3. Verify refresh token
     let refreshPayload;
 
     try {
@@ -81,7 +64,6 @@ export async function requireAuth(c: Context, next: Next) {
       );
     } catch {
       console.log("Refresh token expired/invalid");
-
       return clearAuthCookies(c);
     }
 
@@ -91,7 +73,7 @@ export async function requireAuth(c: Context, next: Next) {
       return clearAuthCookies(c);
     }
 
-    // 4. Check refresh token in database
+    // 3. Check session
     const [session] = await db
       .select()
       .from(sessions)
@@ -105,18 +87,15 @@ export async function requireAuth(c: Context, next: Next) {
 
     if (!session) {
       console.log("Refresh token not found in database");
-
       return clearAuthCookies(c);
     }
 
-    // 5. Check expiration
     if (session.expiresAt < new Date()) {
       console.log("Refresh token expired in database");
-
       return clearAuthCookies(c);
     }
 
-    // 6. Get current user role
+    // 4. Get current user
     const [user] = await db
       .select({
         id: users.id,
@@ -132,7 +111,7 @@ export async function requireAuth(c: Context, next: Next) {
       return clearAuthCookies(c);
     }
 
-    // 7. Create new access token
+    // 5. Create new access token
     const newAccessToken = await sign(
       {
         id: user.id,
@@ -142,26 +121,17 @@ export async function requireAuth(c: Context, next: Next) {
       env.JWT_ACCESS_SECRET,
     );
 
-    // 8. Replace access token cookie
-    setCookie(c, "accessToken", newAccessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "None" : "Lax",
-      path: "/",
-      maxAge: FIFTEEN_MINUTES_SECONDS,
-    });
+    // 6. Set new access token
+    setAuthCookies(c, newAccessToken, refreshToken);
 
-    // 9. Authenticate request
     c.set("userId", {
       id: user.id,
       role: user.role,
     });
 
-    // 10. Continue
     return next();
   } catch (error) {
     console.error("Auth middleware error:", error);
-
     return clearAuthCookies(c);
   }
 }
