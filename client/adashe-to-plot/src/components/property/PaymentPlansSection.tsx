@@ -7,6 +7,7 @@ import { useGetMyPropertyPurchase } from "../../../hook/property-payment";
 
 export function PaymentPlansSection({
   price,
+  isApplication,
   propertyId,
   isAtiMember,
   rates,
@@ -20,6 +21,7 @@ export function PaymentPlansSection({
   price: number;
   propertyId: string;
   isAtiMember: any;
+  isApplication: any;
   rates: PlanRate[];
   estate: {
     id: string;
@@ -36,7 +38,7 @@ export function PaymentPlansSection({
 }) {
   const { data: purchaseData, isLoading: purchaseLoading } =
     useGetMyPropertyPurchase(propertyId);
-
+  console.log("data from purchaseData", purchaseData);
   const existingPurchaseId = purchaseData?.data?.purchase?.id ?? null;
   return (
     <div>
@@ -77,6 +79,7 @@ export function PaymentPlansSection({
             propertyState={propertyState}
             highlight={Number(rate.interestRate) === 0}
             isAtiPlusMember={isAtiMember}
+            isApplication={isApplication}
             isAuthenticated={isAuthenticated}
             canPurchase={canPurchase}
             existingPurchaseId={existingPurchaseId}

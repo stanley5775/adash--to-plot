@@ -1,4 +1,5 @@
 import { LoginForm } from "@/components/login/LoginForm";
+import Loading from "@/components/ui/Loading";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -9,10 +10,8 @@ export const metadata: Metadata = {
 };
 export default function LoginPage() {
   return (
-    <>
-      <Suspense fallback={null}>
-        <LoginForm />
-      </Suspense>
-    </>
+    <Suspense fallback={<Loading />}>
+      <LoginForm />
+    </Suspense>
   );
 }

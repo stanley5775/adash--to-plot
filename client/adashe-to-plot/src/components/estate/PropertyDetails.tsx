@@ -127,6 +127,7 @@ export default function PropertyDetails({
                 propertyState={property.state}
                 isAuthenticated={property.isAuthenticated}
                 isAtiMember={property.isAtiMember}
+                isApplication={property.isApplication}
                 canPurchase={property.canPurchase}
               />
             </div>

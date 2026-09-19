@@ -128,6 +128,7 @@ export const users = pgTable(
     phone_number: text("phone").notNull(),
 
     ATI_membership: boolean("ATI_membership").notNull().default(false),
+    isApplication: boolean("is_application").notNull().default(false),
 
     Password: text("password_hash").notNull(),
 

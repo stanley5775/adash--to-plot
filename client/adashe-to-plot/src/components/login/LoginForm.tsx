@@ -43,21 +43,26 @@ export function LoginForm() {
       },
       {
         onSuccess: (data) => {
-           toast.success("Login successful!");
+          toast.success("Login successful!");
 
-           setUser(data.user);
+          setUser(data.user);
 
-           const redirect = searchParams.get("redirect");
+          const redirect = searchParams.get("redirect");
 
-           if (redirect) {
-             router.push(redirect);
-           } else if (data.user.role === "ADMIN") {
-             router.push("/admin");
-           } else {
-             router.push("/dashboard");
-           }
+          if (data.user.role !== "ADMIN" && data.user.isAppication === false) {
+            router.push("/application");
+            return;
+          }
 
-           reset();
+          if (redirect) {
+            router.push(redirect);
+          } else if (data.user.role === "ADMIN") {
+            router.push("/admin");
+          } else {
+            router.push("/dashboard");
+          }
+
+          reset();
         },
 
         onError: (error) => {

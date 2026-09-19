@@ -63,7 +63,7 @@ export function EstatesContent() {
 
         <p className="mt-3 text-ink-500">
           Browse every Adashè-to-Plot estate currently open for investment, and
-          filter by location and price.
+          filter by location, property type, price and availability.
         </p>
       </div>
 

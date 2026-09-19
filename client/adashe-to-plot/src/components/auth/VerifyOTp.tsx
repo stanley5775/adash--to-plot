@@ -45,8 +45,9 @@ export default function VerifyOtp() {
         otp: data.otp,
       },
       {
-        onSuccess: (data) => {
-          toast.success(data.message);
+        onSuccess: (response) => {
+          toast.success(response.message);
+
           router.push(
             `/reset-password?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(data.otp)}`,
           );
@@ -54,6 +55,7 @@ export default function VerifyOtp() {
 
         onError: (error) => {
           toast.error(error.message);
+
           setError("root", {
             type: "server",
             message: error.message || "Invalid or expired OTP.",

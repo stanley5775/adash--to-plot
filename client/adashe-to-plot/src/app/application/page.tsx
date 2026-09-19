@@ -10,6 +10,7 @@ import { useCheckApplication } from "../../../hook/users";
 export default function ApplicationCheck() {
   const { data, isLoading, isError, error } = useCheckApplication();
 
+  console.log("data from application", data);
   const [successData, setSuccessData] = useState<{
     applicationId: string;
     paymentReference: string;

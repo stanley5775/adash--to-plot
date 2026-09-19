@@ -151,7 +151,23 @@ export const getPropertyById = async (c: Context) => {
         }
       }
     }
+    // ============================================================
+    // CHECK APPLICATION STATUS
+    // ============================================================
 
+    let isApplication = false;
+
+    if (isAuthenticated && userId) {
+      const [user] = await db
+        .select({
+          isApplication: users.isApplication,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      isApplication = user?.isApplication === true;
+    }
     // ============================================================
     // CHECK ATI MEMBERSHIP
     // ============================================================
@@ -275,7 +291,7 @@ export const getPropertyById = async (c: Context) => {
 
           isAuthenticated,
           canPurchase,
-
+          isApplication,
           paymentPlans,
         },
       },

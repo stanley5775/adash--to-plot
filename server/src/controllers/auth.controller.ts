@@ -131,6 +131,7 @@ export const login = async (c: Context) => {
             email: user.email,
             phone_number: user.phone_number,
             role: user.role,
+            isAppication: user.isAppication,
             isActive: user.isActive,
           },
         },
@@ -155,7 +156,8 @@ export const login = async (c: Context) => {
       return c.json(
         {
           success: false,
-          message: "Your account has been disabled",
+          message:
+            "“Your account has been disabled. Please contact our administrator for assistance.”",
           error: "ACCOUNT_DISABLED",
         },
         403,
