@@ -15,7 +15,7 @@ export default function EstateDetailsPage({
 
   const { data, isLoading, isError } = useGetPropertiesUsersById(propertyId);
 
-  console.log("data", data);
+  console.log("data from property", data);
   if (isLoading) {
     return <PropertyDetailsSkeleton />;
   }

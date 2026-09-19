@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, FileText, CalendarDays } from "lucide-react";
+import { Eye, FileText, CalendarDays, ArrowRight } from "lucide-react";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { Badge, statusToTone } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useGetMyApplicationHistory } from "../../../../hook/users";
+import { Button } from "@/components/ui/Button";
 
 export default function ApplicationHistoryPage() {
   const { data, isLoading, isError } = useGetMyApplicationHistory();
 
+  console.log("application check", data);
+
   const applications = data?.data?.applications ?? [];
+  const isApplication = data?.data?.isApplication;
 
   return (
     <div className="space-y-8">
@@ -31,6 +35,27 @@ export default function ApplicationHistoryPage() {
           title="Unable to load applications"
           description="Something went wrong while loading your application history."
         />
+      ) : isApplication === false ? (
+        <div className="rounded-2xl border border-navy-800/10 bg-white p-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-navy-50">
+            <FileText className="h-6 w-6 text-navy-900" />
+          </div>
+
+          <h2 className="mt-4 text-lg font-bold text-navy-950">
+            No application found
+          </h2>
+
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-500">
+            You have not submitted a land application yet. Complete your
+            application to continue with your property purchase.
+          </p>
+          <Button className="mt-4">
+            <Link href="/application" className="mt- inline-flex items-center">
+              Go to Application
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       ) : applications.length === 0 ? (
         <EmptyState
           title="No applications yet"

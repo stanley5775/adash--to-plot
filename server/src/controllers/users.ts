@@ -121,8 +121,6 @@ export const verifyApplicationPayment = async (c: Context) => {
 
     const transaction = paystackResult.data;
 
-    console.log(transaction, "coming from Paystack");
-
     // 7. Check actual Paystack transaction status
     if (transaction.status !== "success") {
       return c.json(
@@ -195,7 +193,14 @@ export const verifyApplicationPayment = async (c: Context) => {
         isApplication: true,
       })
       .where(eq(applicationSchema.id, applicationId));
-
+    //trun use is application true
+    await db
+      .update(users)
+      .set({
+        isApplication: true,
+        updatedAt: paidAt,
+      })
+      .where(eq(users.id, payment.userId));
     // 13. Get user for email
     const [user] = await db
       .select({
@@ -444,10 +449,29 @@ export const checkApplication = async (c: Context) => {
 
     const userId = authUser.id;
 
+    // Get user's application flag
+    const [user] = await db
+      .select({
+        isApplication: users.isApplication,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          message: "User not found",
+        },
+        404,
+      );
+    }
+
+    // Get application details
     const [application] = await db
       .select({
         id: applicationSchema.id,
-        isApplication: applicationSchema.isApplication,
         status: applicationSchema.status,
       })
       .from(applicationSchema)
@@ -457,7 +481,7 @@ export const checkApplication = async (c: Context) => {
     return c.json({
       success: true,
       data: {
-        isApplication: application?.isApplication === true,
+        isApplication: user.isApplication === true,
         applicationId: application?.id ?? null,
         status: application?.status ?? null,
       },
@@ -835,25 +859,46 @@ export const getMyApplicationHistory = async (c: Context) => {
       );
     }
 
-    const applications = await db
-      .select()
-      .from(applicationSchema)
-      .where(eq(applicationSchema.userId, authUser.id))
-      .orderBy(desc(applicationSchema.createdAt));
+    const userId = authUser.id;
+    // Check user's isApplication field
+    const [user] = await db
+      .select({
+        isApplication: users.isApplication,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
-    if (applications.length === 0) {
+    if (!user) {
+      return c.json(
+        {
+          success: false,
+          message: "User not found",
+        },
+        404,
+      );
+    }
+    if (!user.isApplication) {
       return c.json({
         success: true,
         data: {
           applications: [],
+          isApplication: false,
         },
       });
     }
+    // Get application history
+    const applications = await db
+      .select()
+      .from(applicationSchema)
+      .where(eq(applicationSchema.userId, userId))
+      .orderBy(desc(applicationSchema.createdAt));
 
     return c.json({
       success: true,
       data: {
         applications,
+        isApplication: user.isApplication,
       },
     });
   } catch (error) {

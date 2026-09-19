@@ -35,6 +35,7 @@ export function PaymentPlanCard({
   existingPurchaseId,
   rate,
   estate,
+  isApplication,
   propertyLocation,
   propertyCity,
   propertyState,
@@ -45,6 +46,7 @@ export function PaymentPlanCard({
 }: {
   existingPurchaseId: any;
   price: number;
+  isApplication: any;
   rate: PlanRate;
   estate: EstatePaymentInfo;
   propertyLocation?: string;
@@ -88,7 +90,10 @@ export function PaymentPlanCard({
 
       return;
     }
-
+    if (!isApplication) {
+      router.push("/application");
+      return;
+    }
     // Property unavailable
     if (!canPurchase) {
       return;

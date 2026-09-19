@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "3042d985-2dfc-4605-a8f7-01f22e9aff16",
+  "id": "9a01234a-bbf6-45ce-8746-0837c8acf736",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -2627,6 +2627,19 @@
       "generated": null,
       "identity": null,
       "name": "ATI_membership",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "is_application",
       "entityType": "columns",
       "schema": "public",
       "table": "users"

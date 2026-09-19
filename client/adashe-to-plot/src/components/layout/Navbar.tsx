@@ -6,10 +6,11 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import { useUser } from "../../../context/UserContext";
+import toast from "react-hot-toast";
 
 const links = [
   { href: "/estates", label: "Estates" },
-  // { href: "/payment-plans", label: "Payment Plans" },
+
   { href: "/application", label: "Land Application" },
   { href: "/ati-plus", label: "ATI Plus" },
   { href: "/about", label: "About" },
@@ -42,8 +43,10 @@ export function Navbar() {
     try {
       await logout();
       setOpen(false);
+      toast.success("Logged out successfully");
       router.push("/login");
     } catch (error) {
+      toast.error("Logout failed:");
       console.error("Logout failed:", error);
     }
   };

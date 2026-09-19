@@ -240,6 +240,7 @@ CREATE TABLE "users" (
 	"email" text NOT NULL UNIQUE,
 	"phone" text NOT NULL,
 	"ATI_membership" boolean DEFAULT false NOT NULL,
+	"is_application" boolean DEFAULT false NOT NULL,
 	"password_hash" text NOT NULL,
 	"role" "user_role" DEFAULT 'CUSTOMER'::"user_role" NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,

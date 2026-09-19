@@ -91,6 +91,7 @@ export const loginUser = async ({
     email: user.email,
     phone_number: user.phone_number,
     role: user.role,
+    isAppication: user.isApplication,
     isActive: user.isActive,
     createdAt: user.createdAt,
   };

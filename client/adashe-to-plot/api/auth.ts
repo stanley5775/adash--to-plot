@@ -21,8 +21,6 @@ export const registerUser = async (data: RegisterPayload) => {
 
   const result = await res.json();
 
-  console.log(result, "from register");
-
   if (!res.ok) {
     throw new Error(result.message || "Registration failed");
   }
@@ -38,7 +36,7 @@ export const loginUser = async (data: LoginPayload) => {
     body: JSON.stringify(data),
   });
   const result = await res.json();
-  console.log(result, "from login");
+
   if (!res.ok) {
     throw new Error(result.message || "Login failed");
   }
